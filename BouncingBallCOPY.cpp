@@ -8,6 +8,7 @@
 #endif
 using namespace std;
 
+//Here's some new comments to test the git log function
 
 //Joe's code
 static int counter = 0;    //iterator which will reach COUNT
