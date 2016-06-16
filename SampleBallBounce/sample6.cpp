@@ -47,6 +47,11 @@ const dReal sides2[3] = {B2x=0.5,B2y=0.5,B2z=1.0}; // length of edges
 const dReal sides3[3] = {B3x=0.5,B3y=0.5,B3z=1.0}; // length of edges
 const dReal sides4[3] = {B4x=0.5,B4y=0.5,B4z=1.0}; // length of edges
 
+//Rotation declarations
+const dReal B1matrix[3][3] = {  { 0, 1, 1},
+                                { 0, 1, 1},
+                                { 0, 1, 1}  }; 
+
 //object declarations
 typedef struct {
   dBodyID body;
@@ -198,6 +203,7 @@ int main (int argc, char *argv[])
   dMassSetBoxTotal(&m1,mass,sides1[0], sides1[1], sides1[2]);
   dBodySetMass(box1.body,&m1);
   dBodySetPosition(box1.body, x0, y0+0.1, z0+2);
+  //dBodySetRotation (dBodyID, dMatrix3 R);
   box1.geom = dCreateBox(space,sides1[0], sides1[1], sides1[2]);
   dGeomSetBody(box1.geom,box1.body);
 
