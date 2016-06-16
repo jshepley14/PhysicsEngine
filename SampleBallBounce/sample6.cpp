@@ -8,6 +8,7 @@
 
 #ifdef dDOUBLE
 #define dsDrawSphere dsDrawSphereD
+#define dsDrawBox  dsDrawBoxD
 #endif
 
 static dWorldID world;
@@ -20,12 +21,13 @@ dsFunctions fn;
 
 const dReal   radius = 0.2;
 const dReal   mass   = 1.0;
+const dReal sides[3] = {0.5,0.5,1.0}; // length of edges
 
 typedef struct {
   dBodyID body;
   dGeomID geom;
 } MyObject;
-MyObject ball;
+MyObject ball, box;
 
 static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 {
@@ -53,7 +55,7 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 
 static void simLoop (int pause)
 {
-  const dReal *pos,*R;
+  const dReal *pos,*R, *Boxpos, *BoxR;
 
   flag = 0;
   dSpaceCollide(space,0,&nearCallback);
@@ -67,6 +69,10 @@ static void simLoop (int pause)
   pos = dBodyGetPosition(ball.body);
   R   = dBodyGetRotation(ball.body);
   dsDrawSphere(pos,R,radius);
+
+  Boxpos = dBodyGetPosition(box.body);
+  BoxR   = dBodyGetRotation(box.body);
+  dsDrawBox(Boxpos,BoxR,sides);
 }
 
 void start()
@@ -111,6 +117,17 @@ int main (int argc, char *argv[])
 
   ball.geom = dCreateSphere(space,radius);
   dGeomSetBody(ball.geom,ball.body);
+
+ // Create a box
+  box.body = dBodyCreate(world);
+  dMassSetZero(&m1);
+  dMassSetBoxTotal(&m1,mass,sides[0], sides[1], sides[2]);
+  dBodySetMass(box.body,&m1);
+  dBodySetPosition(box.body, x0, y0, z0+2);
+
+  box.geom = dCreateBox(space,sides[0], sides[1], sides[2]);
+  dGeomSetBody(box.geom,box.body);
+
 
   dsSimulationLoop (argc,argv,352,288,&fn);
 
