@@ -5,12 +5,26 @@
 
 #include <ode/ode.h>
 #include <drawstuff/drawstuff.h>
-
+#include <string.h>
+#include <iostream>
+#include <cmath>
 #ifdef dDOUBLE
 #define dsDrawSphere dsDrawSphereD
 #define dsDrawBox  dsDrawBoxD
 #endif
+using namespace std;
 
+//function declarations
+static void inStaticEquilibrium(double startZ, double endZ );
+
+
+//static equilibrium constants
+static int counter = 0;    //iterator which will reach COUNT
+static int COUNT = 10;    //how long do we want to wait to check movement
+static double Z_COORDINATE = 0.45; //The object's center's initial height
+static double THRESHHOLD = 0.1;  //how much movement is allowed
+
+//ID declarations
 static dWorldID world;
 static dSpaceID space;
 static dGeomID  ground;
@@ -18,14 +32,22 @@ static dJointGroupID contactgroup;
 static int flag = 0; //<-don't need this?
 dsFunctions fn;
 
-
-const dReal   radius = 0.2;
+//object construction variables
+const dReal   radius = 0.2; //sphere
 const dReal   mass   = 1.0;
-const dReal sides1[3] = {0.5,0.5,1.0}; // length of edges
-const dReal sides2[3] = {0.5,0.5,1.0}; // length of edges
-const dReal sides3[3] = {0.5,0.5,1.0}; // length of edges
-const dReal sides4[3] = {0.5,0.5,1.0}; // length of edges
 
+//Coordinate declarations
+double B1x, B1y, B1z; //Box1
+double B2x, B2y, B2z; //Box2 
+double B3x, B3y, B3z; //Box3
+double B4x, B4y, B4z; //Box4
+
+const dReal sides1[3] = {B1x=0.5,B1y=0.5,B1z=1.0}; // length of edges
+const dReal sides2[3] = {B2x=0.5,B2y=0.5,B2z=1.0}; // length of edges
+const dReal sides3[3] = {B3x=0.5,B3y=0.5,B3z=1.0}; // length of edges
+const dReal sides4[3] = {B4x=0.5,B4y=0.5,B4z=1.0}; // length of edges
+
+//object declarations
 typedef struct {
   dBodyID body;
   dGeomID geom;
@@ -98,7 +120,34 @@ static void simLoop (int pause)
   dsDrawBox(Box4pos,Box4R,sides4);
 
 
+  //Static Equilibrium Detection
+  if (counter == COUNT){
+        inStaticEquilibrium(B4z, Box4pos[2]); //feed it in the Z coordinates of Box4
+    }
+    counter++;
 }
+
+//This function checks for static equilibrium
+/* Later we could turn this into a bool return. Additionally, one
+*  could feed in dReal types instead of doubles. One would also
+*  want to be able to feed in an arbitrary number of object data.
+*
+*/
+static void inStaticEquilibrium(double startZ, double endZ ){
+
+    double deltaZ = std::abs(startZ - endZ);
+    cout << "StartPosition: " << startZ << " \n" << endl;
+    cout << "EndPosition: " << endZ << " \n" << endl;
+    cout << "delta Z: " << deltaZ << " \n" << endl;
+    cout << "counter = " << COUNT  << " \n" << endl;
+    cout << "THRESHHOLD : " << THRESHHOLD << " \n" << endl;
+    //Check if object moved since initialization
+    if ( (deltaZ) > THRESHHOLD){
+        cout << "FALSE: Not in static equilibrium" << endl;
+    } else 
+        cout << "True: Is in static equilibrium" << endl;
+}
+
 
 //set camera viewpoint
 void start()
