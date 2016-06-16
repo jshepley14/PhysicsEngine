@@ -48,9 +48,24 @@ const dReal sides3[3] = {B3x=0.5,B3y=0.5,B3z=1.0}; // length of edges
 const dReal sides4[3] = {B4x=0.5,B4y=0.5,B4z=1.0}; // length of edges
 
 //Rotation declarations
-const dReal B1matrix[3][3] = {  { 0, 1, 1},
+const dMatrix3 B1matrix[3][3] = {  { 0, 1, 1},
                                 { 0, 1, 1},
                                 { 0, 1, 1}  }; 
+//Rotation declarations
+const dMatrix3 B2matrix[3][3] = {  { 0, 1, 1},
+                                { 0, 0.5, 1},
+                                { 0, 0.7, 1}  }; 
+
+//Rotation declarations
+const dMatrix3 B3matrix[3][3] = {  { 0, 1, 0},
+                                { 0.8, 1, 1},
+                                { 0, 0.3, 1}  }; 
+
+//Rotation declarations
+const dMatrix3 B4matrix[3][3] = {  { 0, 1, 1},
+                                { 0, 1, 1},
+                                { 0, 1, 1}  }; 
+
 
 //object declarations
 typedef struct {
@@ -203,7 +218,7 @@ int main (int argc, char *argv[])
   dMassSetBoxTotal(&m1,mass,sides1[0], sides1[1], sides1[2]);
   dBodySetMass(box1.body,&m1);
   dBodySetPosition(box1.body, x0, y0+0.1, z0+2);
-  //dBodySetRotation (dBodyID, dMatrix3 R);
+  dBodySetRotation (box1.body, B1matrix[3][3]);      //Can comment this out if you dont want weird rotation
   box1.geom = dCreateBox(space,sides1[0], sides1[1], sides1[2]);
   dGeomSetBody(box1.geom,box1.body);
 
@@ -213,6 +228,7 @@ int main (int argc, char *argv[])
   dMassSetBoxTotal(&m1,mass,sides2[0], sides2[1], sides2[2]);
   dBodySetMass(box2.body,&m1);
   dBodySetPosition(box2.body, x0, y0+1, z0+2);
+  dBodySetRotation (box2.body, B2matrix[3][3]);
   box2.geom = dCreateBox(space,sides2[0], sides2[1], sides2[2]);
   dGeomSetBody(box2.geom,box2.body);
 
@@ -222,6 +238,7 @@ int main (int argc, char *argv[])
   dMassSetBoxTotal(&m1,mass,sides3[0], sides3[1], sides3[2]);
   dBodySetMass(box3.body,&m1);
   dBodySetPosition(box3.body, x0-1, y0+0.1, z0+2);
+  dBodySetRotation (box3.body, B3matrix[3][3]);
   box3.geom = dCreateBox(space,sides3[0], sides3[1], sides3[2]);
   dGeomSetBody(box3.geom,box3.body);
 
@@ -231,6 +248,7 @@ int main (int argc, char *argv[])
   dMassSetBoxTotal(&m1,mass,sides4[0], sides4[1], sides4[2]);
   dBodySetMass(box4.body,&m1);
   dBodySetPosition(box4.body, x0+1, y0+0.1, z0+2);
+  dBodySetRotation (box4.body, B4matrix[3][3]);
   box4.geom = dCreateBox(space,sides4[0], sides4[1], sides4[2]);
   dGeomSetBody(box4.geom,box4.body);
 
