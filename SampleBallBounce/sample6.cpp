@@ -49,14 +49,20 @@ const dReal sides3[3] = {B3Lengthx=0.5,B3Lengthy=0.5,B3Lengthz=1.0}; // length o
 const dReal sides4[3] = {B4Lengthx=0.5,B4Lengthy=0.5,B4Lengthz=1.0}; // length of edges
 
 //Box center position declarations
-double B1x, B1y, B1z; //Box1
-double B2x, B2y, B2z; //Box2 
-double B3x, B3y, B3z; //Box3
-double B4x, B4y, B4z; //Box4
-const dReal center1[3] = {B1x=0.0,B1y=0.0,B1z=2.0}; // length of edges
-const dReal center2[3] = {B2x=0.5,B2y=0.5,B2z=1.0}; // length of edges
-const dReal center3[3] = {B3x=0.5,B3y=0.5,B3z=1.0}; // length of edges
-const dReal center4[3] = {B4x=0.5,B4y=0.5,B4z=1.0}; // length of edges
+dReal S1x, S1y, S1z;  //Sphere1
+dReal B1x, B1y, B1z; //Box1
+dReal B2x, B2y, B2z; //Box2 
+dReal B3x, B3y, B3z; //Box3
+dReal B4x, B4y, B4z; //Box4
+
+
+const dReal centerSphr[3] = {S1x=0.0,S1y=0.0,S1z=2.0}; // length of edges
+const dReal center1[3] = {B1x=0.0,B1y=0.1,B1z=4.0}; // length of edges
+const dReal center2[3] = {B2x=0.0,B2y=1.0,B2z=4.0}; // length of edges
+const dReal center3[3] = {B3x=-1.0,B3y=0.1,B3z=4.0}; // length of edges
+const dReal center4[3] = {B4x=1.0,B4y=0.1,B4z=4.0}; // length of edges
+
+
 
 
 
@@ -166,11 +172,12 @@ dsSetColor(0,12,200);
    
   if (counter == 400) {
     //printEndpositions(Box1pos);
-
-    cout << "const dReal sides1[3] = {B1x="<<Box1pos[0]<<",B1y="<<Box1pos[1]<<",B1z="<<Box1pos[2]<<"};\n" <<endl; // length of edges
-    cout << "const dReal sides1[3] = {B1x="<<Box2pos[0]<<",B1y="<<Box2pos[1]<<",B1z="<<Box2pos[2]<<"};\n" <<endl; // length of edges
-    cout << "const dReal sides1[3] = {B1x="<<Box3pos[0]<<",B1y="<<Box3pos[1]<<",B1z="<<Box3pos[2]<<"};\n" <<endl; // length of edges
-    cout << "const dReal sides1[3] = {B1x="<<Box4pos[0]<<",B1y="<<Box4pos[1]<<",B1z="<<Box4pos[2]<<"};\n" <<endl; // length of edges
+    //need to change this because having B1 for everything doesnt make sense
+    cout << "const dReal centerSphr[3] = {S1x="<<pos[0]<<",S1y="<<pos[1]<<",S1z="<<pos[2]<<"};\n" <<endl; // length of edges
+    cout << "const dReal center1[3] = {B1x="<<Box1pos[0]<<",B1y="<<Box1pos[1]<<",B1z="<<Box1pos[2]<<"};\n" <<endl; // length of edges
+    cout << "const dReal center2[3] = {B2x="<<Box2pos[0]<<",B2y="<<Box2pos[1]<<",B2z="<<Box2pos[2]<<"};\n" <<endl; // length of edges
+    cout << "const dReal center3[3] = {B3x="<<Box3pos[0]<<",B3y="<<Box3pos[1]<<",B3z="<<Box3pos[2]<<"};\n" <<endl; // length of edges
+    cout << "const dReal center4[3] = {B4x="<<Box4pos[0]<<",B4y="<<Box4pos[1]<<",B4z="<<Box4pos[2]<<"};\n" <<endl; // length of edges
 
   }
 
@@ -215,7 +222,12 @@ void start()
 {
   static float xyz[3] = {0.0,-3.0,1.0};
   static float hpr[3] = {90.0,0.0,0.0};
+  
+  //top viewpoint
+  //static float xyz[3] = {0.8934,0.2358,5.7000};
+  //static float hpr[3] = {89.5000,-93.0000,0.0000};
   dsSetViewpoint (xyz,hpr);
+
 }
 
 void  prepDrawStuff() {
@@ -229,6 +241,10 @@ void  prepDrawStuff() {
 
 int main (int argc, char *argv[])
 {
+
+  //My addition
+  //dReal B3x=-1.0, B3y=0.1, B3z=4.0;
+
   dReal x0 = 0.0, y0 = 0.0, z0 = 2.0;
   dMass m1;
 
@@ -249,16 +265,20 @@ int main (int argc, char *argv[])
   dMassSetZero(&m1);
   dMassSetSphereTotal(&m1,mass,radius);
   dBodySetMass(ball.body,&m1);
-  dBodySetPosition(ball.body, x0, y0, z0);
+  dBodySetPosition(ball.body, centerSphr[0], centerSphr[1], centerSphr[2]);
+  //dBodySetPosition(ball.body, x0, y0, z0);
   ball.geom = dCreateSphere(space,radius);
   dGeomSetBody(ball.geom,ball.body);
 
- // Create a box1
+  // Create a box1
   box1.body = dBodyCreate(world);
   dMassSetZero(&m1);
+  dBodySetPosition(box1.body, B1x-1+1, B1y, B1z);
   dMassSetBoxTotal(&m1,mass,sides1[0], sides1[1], sides1[2]);
   dBodySetMass(box1.body,&m1);
-  dBodySetPosition(box1.body, center1[0], center1[1]+0.1, center1[2]+2);
+  dBodySetPosition(box1.body,center1[0], center1[1], center1[2]);
+  cout<<"ignore->"<<y0+-1.1<<" "<<z0+2<< endl;
+  //dBodySetPosition(box1.body, x0, y0+0.1, z0+2);
   dBodySetRotation (box1.body, B1matrix[3][3]);      //Can comment this out if you dont want weird rotation
   box1.geom = dCreateBox(space,sides1[0], sides1[1], sides1[2]);
   dGeomSetBody(box1.geom,box1.body);
@@ -268,7 +288,7 @@ int main (int argc, char *argv[])
   dMassSetZero(&m1);
   dMassSetBoxTotal(&m1,mass,sides2[0], sides2[1], sides2[2]);
   dBodySetMass(box2.body,&m1);
-  dBodySetPosition(box2.body, center1[0], center1[1]+1, center1[2]+2);
+  dBodySetPosition(box2.body, center2[0], center2[1], center2[2]);
   dBodySetRotation (box2.body, B2matrix[3][3]);
   box2.geom = dCreateBox(space,sides2[0], sides2[1], sides2[2]);
   dGeomSetBody(box2.geom,box2.body);
@@ -278,7 +298,7 @@ int main (int argc, char *argv[])
   dMassSetZero(&m1);
   dMassSetBoxTotal(&m1,mass,sides3[0], sides3[1], sides3[2]);
   dBodySetMass(box3.body,&m1);
-  dBodySetPosition(box3.body, center1[0]-1, center1[1]+0.1, center1[2]+2);
+  dBodySetPosition(box3.body, center3[0], center3[1], center3[2]);
   dBodySetRotation (box3.body, B3matrix[3][3]);
   box3.geom = dCreateBox(space,sides3[0], sides3[1], sides3[2]);
   dGeomSetBody(box3.geom,box3.body);
@@ -288,7 +308,7 @@ int main (int argc, char *argv[])
   dMassSetZero(&m1);
   dMassSetBoxTotal(&m1,mass,sides4[0], sides4[1], sides4[2]);
   dBodySetMass(box4.body,&m1);
-  dBodySetPosition(box4.body, center1[0]+1, center1[1]+0.1, center1[2]+2);
+  dBodySetPosition(box4.body, center4[0], center4[1], center4[2]);
   dBodySetRotation (box4.body, B4matrix[3][3]);
   box4.geom = dCreateBox(space,sides4[0], sides4[1], sides4[2]);
   dGeomSetBody(box4.geom,box4.body);
