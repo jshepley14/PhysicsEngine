@@ -19,11 +19,12 @@ static void inStaticEquilibrium(double startZ, double endZ );
 static void printEndpositions(const dReal *Box1pos);
 
 //static equilibrium constants
-static int counter = 0;    //iterator which will reach COUNT
-static int COUNT = 10;    //how long do we want to wait to check movement
-static double Z_COORDINATE = 0.45; //The object's center's initial height
+static int counter = 0;          //iterator which will reach COUNT
+static int COUNT = 10;           //how long until we want to wait to check satic equlibrium?
 static double THRESHHOLD = 0.1;  //how much movement is allowed
-
+static double TIMESTEP = 0.02;    //Time step originally was at 0.01, but we may
+                                 //be able to increase this making calculations faster
+                                 //most efficient would prob be 0.01 ≤ TIMESTEP ≤ 0.03
 //ID declarations
 static dWorldID world;
 static dSpaceID space;
@@ -48,7 +49,7 @@ const dReal sides2[3] = {B2Lengthx=0.5,B2Lengthy=0.5,B2Lengthz=1.0}; // length o
 const dReal sides3[3] = {B3Lengthx=0.5,B3Lengthy=0.5,B3Lengthz=1.0}; // length of edges
 const dReal sides4[3] = {B4Lengthx=0.5,B4Lengthy=0.5,B4Lengthz=1.0}; // length of edges
 
-//Box center position declarations
+//Position variables
 dReal S1x, S1y, S1z;  //Sphere1
 dReal B1x, B1y, B1z; //Box1
 dReal B2x, B2y, B2z; //Box2 
@@ -56,37 +57,59 @@ dReal B3x, B3y, B3z; //Box3
 dReal B4x, B4y, B4z; //Box4
 
 
+/*
+//Position declarations
 const dReal centerSphr[3] = {S1x=0.0,S1y=0.0,S1z=2.0}; // length of edges
 const dReal center1[3] = {B1x=0.0,B1y=0.1,B1z=4.0}; // length of edges
 const dReal center2[3] = {B2x=0.0,B2y=1.0,B2z=4.0}; // length of edges
 const dReal center3[3] = {B3x=-1.0,B3y=0.1,B3z=4.0}; // length of edges
 const dReal center4[3] = {B4x=1.0,B4y=0.1,B4z=4.0}; // length of edges
 
-//To Do: print out final rotation matrices
-
-
-
-
 //Rotation declarations
 const dMatrix3 B1matrix[3][3] = {  { 0, 1, 1},
                                 { 0, 1, 1},
                                 { 0, 1, 1}  }; 
-//Rotation declarations
 const dMatrix3 B2matrix[3][3] = {  { 0, 1, 1},
                                 { 0, 0.5, 1},
                                 { 0, 0.7, 1}  }; 
-
-//Rotation declarations
 const dMatrix3 B3matrix[3][3] = {  { 0, 1, 0},
                                 { 0.8, 1, 1},
                                 { 0, 0.3, 1}  }; 
-
-//Rotation declarations
 const dMatrix3 B4matrix[3][3] = {  { 0, 1, 1},
                                 { 0, 1, 1},
                                 { 0, 1, 1}  }; 
 
+*/
 
+//Use this for static equilibrium example
+
+const dReal centerSphr[3] = {S1x=0.222523,S1y=-0.0803006,S1z=0.2};
+const dReal center1[3] = {B1x=0.315066,B1y=0.120175,B1z=0.590846};
+const dReal center2[3] = {B2x=0.305423,B2y=0.600279,B2z=0.25};
+const dReal center3[3] = {B3x=-1.08545,B3y=-0.410903,B3z=0.25};
+const dReal center4[3] = {B4x=1.13042,B4y=0.0812032,B4z=0.5};
+
+const dMatrix3 B1matrix[3][3] = {  { -0.0343974,-1.49881e-11,0.997988},
+                            { 0,-0.30751,0.942834},
+                            { -0.00858871,0,-0.930998}  };
+
+const dMatrix3 B2matrix[3][3] = {  { -3.35709e-12,-1.27513e-11,1},
+                            { 0,-6.47146e-13,1},
+                            { 1.27513e-11,0,-1}  };
+const dMatrix3 B3matrix[3][3] = {  { -4.82185e-16,-0.0168371,0.999858},
+                            { 0,-1.73472e-18,0.999858},
+                            { 0.0168371,0,-1}  };
+const dMatrix3 B4matrix[3][3] = {  { 1,-3.61907e-18,6.88306e-20},
+                            { 0,3.61907e-18,1},
+                            { -6.39488e-19,0,-6.88306e-20}  };
+
+
+
+
+
+
+
+//********************************************************************************************8*******************
 //object declarations
 typedef struct {
   dBodyID body;
@@ -125,7 +148,7 @@ static void simLoop (int pause)
   const dReal *Box4pos, *Box4R;
  
   dSpaceCollide(space,0,&nearCallback);
-  dWorldStep(world,0.01);
+  dWorldStep(world,TIMESTEP);
   dJointGroupEmpty(contactgroup);
 
   // what is this flag stuff?
@@ -164,44 +187,45 @@ dsSetColor(0,12,200);
   dsDrawBox(Box4pos,Box4R,sides4);
 
 
-  //Static Equilibrium Detection
+  /*
+   *  Static Equilibrium Detection
+   *  
+  */ 
   if (counter == COUNT){
-        inStaticEquilibrium(B4z, Box4pos[2]); //feed it in the Z coordinates of Box4
+        inStaticEquilibrium(B4z, Box4pos[2]); //feed it in the Zinital and Zfinal coordinates of Box4
     }
 
    
-  if (counter == 400) {
-    //printEndpositions(Box1pos);
-    //need to change this because having B1 for everything doesnt make sense
+  /*
+   *  This next block of code prints out all the final positions and rotations
+   *  so that one could paste the results back into the code and get static equilibrium
+   *  instead of doing Box1pos to access the coordinates maybe I should do 
+   *  dBodyGetPosition(box1.body) and dBodyGetRotation(box1.body) so that its generalized.
+  */ 
+  if (counter == COUNT) { //previously used 400 instead of COUNT
     cout << "const dReal centerSphr[3] = {S1x="<<pos[0]<<",S1y="<<pos[1]<<",S1z="<<pos[2]<<"};\n" <<endl; // length of edges
     cout << "const dReal center1[3] = {B1x="<<Box1pos[0]<<",B1y="<<Box1pos[1]<<",B1z="<<Box1pos[2]<<"};\n" <<endl; // length of edges
     cout << "const dReal center2[3] = {B2x="<<Box2pos[0]<<",B2y="<<Box2pos[1]<<",B2z="<<Box2pos[2]<<"};\n" <<endl; // length of edges
     cout << "const dReal center3[3] = {B3x="<<Box3pos[0]<<",B3y="<<Box3pos[1]<<",B3z="<<Box3pos[2]<<"};\n" <<endl; // length of edges
     cout << "const dReal center4[3] = {B4x="<<Box4pos[0]<<",B4y="<<Box4pos[1]<<",B4z="<<Box4pos[2]<<"};\n" <<endl; // length of edges
-
-    //cout<<dBodyGetRotation(box1.body)[8]<<endl;
     cout<<"const dMatrix3 B1matrix[3][3] = {  { "<<Box1R[0]<<","<<Box1R[1]<<","<<Box1R[2]<<"},"<<endl;
     cout<<"                            { "<<Box1R[3]<<","<<Box1R[4]<<","<<Box1R[5]<<"},"<<endl;
     cout<<"                            { "<<Box1R[6]<<","<<Box1R[7]<<","<<Box1R[8]<<"}  };"<<endl;
-    cout<<"const dMatrix3 B1matrix[3][3] = {  { "<<Box2R[0]<<","<<Box2R[1]<<","<<Box2R[2]<<"},"<<endl;
+    cout<<"const dMatrix3 B2matrix[3][3] = {  { "<<Box2R[0]<<","<<Box2R[1]<<","<<Box2R[2]<<"},"<<endl;
     cout<<"                            { "<<Box2R[3]<<","<<Box2R[4]<<","<<Box2R[5]<<"},"<<endl;
     cout<<"                            { "<<Box2R[6]<<","<<Box2R[7]<<","<<Box2R[8]<<"}  };"<<endl;
-    cout<<"const dMatrix3 B1matrix[3][3] = {  { "<<Box3R[0]<<","<<Box3R[1]<<","<<Box3R[2]<<"},"<<endl;
+    cout<<"const dMatrix3 B3matrix[3][3] = {  { "<<Box3R[0]<<","<<Box3R[1]<<","<<Box3R[2]<<"},"<<endl;
     cout<<"                            { "<<Box3R[3]<<","<<Box3R[4]<<","<<Box3R[5]<<"},"<<endl;
     cout<<"                            { "<<Box3R[6]<<","<<Box3R[7]<<","<<Box3R[8]<<"}  };"<<endl;
-    cout<<"const dMatrix3 B1matrix[3][3] = {  { "<<Box4R[0]<<","<<Box4R[1]<<","<<Box4R[2]<<"},"<<endl;
+    cout<<"const dMatrix3 B4matrix[3][3] = {  { "<<Box4R[0]<<","<<Box4R[1]<<","<<Box4R[2]<<"},"<<endl;
     cout<<"                            { "<<Box4R[3]<<","<<Box4R[4]<<","<<Box4R[5]<<"},"<<endl;
     cout<<"                            { "<<Box4R[6]<<","<<Box4R[7]<<","<<Box4R[8]<<"}  };"<<endl;
-    
-
-
-
   }
 
 
 
 
-    counter++;
+    counter++;   
 
 
 
