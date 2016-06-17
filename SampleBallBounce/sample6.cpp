@@ -62,7 +62,7 @@ const dReal center2[3] = {B2x=0.0,B2y=1.0,B2z=4.0}; // length of edges
 const dReal center3[3] = {B3x=-1.0,B3y=0.1,B3z=4.0}; // length of edges
 const dReal center4[3] = {B4x=1.0,B4y=0.1,B4z=4.0}; // length of edges
 
-
+//To Do: print out final rotation matrices
 
 
 
@@ -178,6 +178,23 @@ dsSetColor(0,12,200);
     cout << "const dReal center2[3] = {B2x="<<Box2pos[0]<<",B2y="<<Box2pos[1]<<",B2z="<<Box2pos[2]<<"};\n" <<endl; // length of edges
     cout << "const dReal center3[3] = {B3x="<<Box3pos[0]<<",B3y="<<Box3pos[1]<<",B3z="<<Box3pos[2]<<"};\n" <<endl; // length of edges
     cout << "const dReal center4[3] = {B4x="<<Box4pos[0]<<",B4y="<<Box4pos[1]<<",B4z="<<Box4pos[2]<<"};\n" <<endl; // length of edges
+
+    //cout<<dBodyGetRotation(box1.body)[8]<<endl;
+    cout<<"const dMatrix3 B1matrix[3][3] = {  { "<<Box1R[0]<<","<<Box1R[1]<<","<<Box1R[2]<<"},"<<endl;
+    cout<<"                            { "<<Box1R[3]<<","<<Box1R[4]<<","<<Box1R[5]<<"},"<<endl;
+    cout<<"                            { "<<Box1R[6]<<","<<Box1R[7]<<","<<Box1R[8]<<"}  };"<<endl;
+    cout<<"const dMatrix3 B1matrix[3][3] = {  { "<<Box2R[0]<<","<<Box2R[1]<<","<<Box2R[2]<<"},"<<endl;
+    cout<<"                            { "<<Box2R[3]<<","<<Box2R[4]<<","<<Box2R[5]<<"},"<<endl;
+    cout<<"                            { "<<Box2R[6]<<","<<Box2R[7]<<","<<Box2R[8]<<"}  };"<<endl;
+    cout<<"const dMatrix3 B1matrix[3][3] = {  { "<<Box3R[0]<<","<<Box3R[1]<<","<<Box3R[2]<<"},"<<endl;
+    cout<<"                            { "<<Box3R[3]<<","<<Box3R[4]<<","<<Box3R[5]<<"},"<<endl;
+    cout<<"                            { "<<Box3R[6]<<","<<Box3R[7]<<","<<Box3R[8]<<"}  };"<<endl;
+    cout<<"const dMatrix3 B1matrix[3][3] = {  { "<<Box4R[0]<<","<<Box4R[1]<<","<<Box4R[2]<<"},"<<endl;
+    cout<<"                            { "<<Box4R[3]<<","<<Box4R[4]<<","<<Box4R[5]<<"},"<<endl;
+    cout<<"                            { "<<Box4R[6]<<","<<Box4R[7]<<","<<Box4R[8]<<"}  };"<<endl;
+    
+
+
 
   }
 
