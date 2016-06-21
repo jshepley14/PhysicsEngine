@@ -15,7 +15,7 @@
 using namespace std;
 
 //function declarations
-static void inStaticEquilibrium(double startZ, double endZ );
+//static void inStaticEquilibrium(double startZ, MyObject &object );
 static void printEndpositions(const dReal *Box1pos);
 
 
@@ -60,11 +60,11 @@ dReal B4x, B4y, B4z; //Box4
 
 
 //Position declarations
-const dReal centerSphr[3] = {S1x=0.0,S1y=0,S1z=1.9}; // length of edges
-const dReal center1[3] = {B1x=0.0,B1y=0.8,B1z=0.5}; // length of edges
-const dReal center2[3] = {B2x=0.0,B2y=-0.8,B2z=0.5}; // length of edges
-const dReal center3[3] = {B3x=-0.8,B3y=0.0,B3z=0.5}; // length of edges
-const dReal center4[3] = {B4x=0.8,B4y=0.0,B4z=0.5}; // length of edges
+const dReal centerSphr[3] = {S1x=0.0,S1y=0,S1z=1.9}; 
+const dReal center1[3] = {B1x=0.0,B1y=0.8,B1z=0.5}; 
+const dReal center2[3] = {B2x=0.0,B2y=-0.8,B2z=0.5}; 
+const dReal center3[3] = {B3x=-0.8,B3y=0.0,B3z=0.5}; 
+const dReal center4[3] = {B4x=0.8,B4y=0.0,B4z=0.5}; 
 //Rotation declarations
 const dMatrix3 B1matrix = { 1, 0, 0,
                             0, 0, 0,
@@ -82,7 +82,7 @@ const dMatrix3 B4matrix = { 1, 0, 0,
 
 
 
-
+const dReal NewCenter3[3] = {B3x=0,B3y=0,B3z=2};
 
 
 
@@ -97,6 +97,10 @@ typedef struct {
 MyObject ball, box1, box2, box3, box4 ;
 
 
+//Functions
+
+//**BOXES**
+//creates a box 
 static void createBox(MyObject &box, const dReal* center, const dReal* sides, const dMatrix3 MatrixR)
 {
     dMass m1;
@@ -112,6 +116,8 @@ static void createBox(MyObject &box, const dReal* center, const dReal* sides, co
     dGeomSetBody(box.geom,box.body);    
 }
 
+
+//draws a box
 static void drawBox( MyObject &box, const dReal* sides){
     const dReal *pos1,*R1;
     pos1 = dBodyGetPosition(box.body);
@@ -119,6 +125,69 @@ static void drawBox( MyObject &box, const dReal* sides){
     dsDrawBox(pos1,R1,sides);
 }
 
+//destroys a box
+static void destroyBox(MyObject box)
+{
+    dBodyDestroy(box.body);
+    dGeomDestroy(box.geom);
+}
+
+
+//**BALLS**
+// Create a ball
+void createBall(MyObject &ball, const dReal* center, const dReal radius )
+{
+    dMass m1;
+    //dReal x0 = 0.0, y0 = 0.5, z0 = 1.0, radius = 0.1; //[m]
+    dReal mass = 1.0; //[kg]
+
+    ball.body = dBodyCreate(world);   // changed
+    dMassSetZero(&m1);
+    dMassSetSphereTotal(&m1,mass,radius);
+    dBodySetMass(ball.body,&m1);             // changed
+    dBodySetPosition(ball.body, center[0], center[1], center[2]); // changed
+
+    ball.geom = dCreateSphere(space,radius); // add
+    dGeomSetBody(ball.geom,ball.body);       // add
+}
+
+
+//draws a ball
+static void drawBall( MyObject &ball, const dReal radius){
+    const dReal *pos1,*R1;
+    pos1 = dBodyGetPosition(ball.body);
+    R1   = dBodyGetRotation(ball.body);
+    dsDrawSphere(pos1,R1,radius);
+}
+
+//destroys a box
+static void destroyBall(MyObject ball)
+{
+    dBodyDestroy(ball.body);
+    dGeomDestroy(ball.geom);
+}
+
+
+
+
+//edit this function
+void newScene()
+{
+    // destroy
+    dJointGroupDestroy(contactgroup);
+    destroyBox(box1);
+    //destroyBox(box2);
+    //destroyBox(box3);
+    //destroyBox(box4);
+    //destroyBall(ball);
+
+    // create
+    contactgroup = dJointGroupCreate(0);
+    createBox(box1, NewCenter3, sides1, B1matrix);
+    //createBall(ball, center1, radius +.1);
+}
+
+//Collisions Detection
 static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 {
   const int N = 10;
@@ -142,15 +211,42 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 
 
 
+
+
+
+
+//This function checks for static equilibrium
+/* Later we could turn this into a bool return. Additionally, one
+*  could feed in dReal types instead of doubles. One would also
+*  want to be able to feed in an arbitrary number of object data.
+*
+*/
+static void inStaticEquilibrium(double startZ, MyObject &object){
+
+    double endZ = dBodyGetPosition(object.body)[2];
+    double deltaZ = std::abs(startZ - endZ);
+    cout << "StartPosition: " << startZ << " \n" << endl;
+    cout << "EndPosition: " << endZ << " \n" << endl;
+    cout << "delta Z: " << deltaZ << " \n" << endl;
+    cout << "counter = " << COUNT  << " \n" << endl;
+    cout << "THRESHHOLD : " << THRESHHOLD << " \n" << endl;
+    //Check if object moved since initialization
+    if ( (deltaZ) > THRESHHOLD){
+        cout << "FALSE: Not in static equilibrium\n" << endl;
+    } else 
+        cout << "True: Is in static equilibrium\n" << endl;
+}
+
+
+
+
+
+
 static void simLoop (int pause)
 {
-  const dReal *pos,*R;
+  
 
-  /*
-  const dReal *Box1pos, *Box1R;
-  const dReal *Box2pos, *Box2R;
-  const dReal *Box3pos, *Box3R;
-  */
+
  
   dSpaceCollide(space,0,&nearCallback);
   dWorldStep(world,TIMESTEP);
@@ -162,11 +258,10 @@ static void simLoop (int pause)
   //
 
 
-  //draw sphere
-  pos = dBodyGetPosition(ball.body);
-  R   = dBodyGetRotation(ball.body);
-  dsDrawSphere(pos,R,radius);
+  //draw ball (sphere)
 
+    dsSetColor(0.8,.78,.10);
+    drawBall(ball, radius);
 
     dsSetColor(1,0,0);
     drawBox(box1, sides1);
@@ -177,7 +272,7 @@ static void simLoop (int pause)
     dsSetColor(0,0,1);
     drawBox(box3, sides3);
 
-    dsSetColor(0,12,200);
+    dsSetColor(0,.12,.2); //0,12,200 is a bright turquoise
     drawBox(box4, sides4);
   
 
@@ -187,11 +282,16 @@ static void simLoop (int pause)
    *  
   */ 
   
-  if (counter == COUNT){
-
-      cout<<"TEST:"<<dBodyGetPosition(box1.body)[2]<<endl;
-       //inStaticEquilibrium(B3z, Box3pos[2]); //feed it in the Zinital and Zfinal coordinates of Box4
+   if (counter == COUNT){ //now we want to check   
+       inStaticEquilibrium(B3z, box3); //feed it in the Zinital and Zfinal coordinates of Box4
+       
     }
+
+  if (counter == 100){
+      cout<<"RESTART"<<endl;
+      newScene();
+      counter =0;
+  }
 
    
   /*
@@ -199,9 +299,7 @@ static void simLoop (int pause)
    *  so that one could paste the results back into the code and get static equilibrium
    *  instead of doing Box1pos to access the coordinates maybe I should do 
    *  dBodyGetPosition(box1.body) and dBodyGetRotation(box1.body) so that its generalized.
-  */ 
 
-  /*
   if (counter == 1) { //previously used 400 instead of COUNT
     cout << "const dReal centerSphr[3] = {S1x="<<pos[0]<<",S1y="<<pos[1]<<",S1z="<<pos[2]<<"};\n" <<endl; // length of edges
     cout << "const dReal center1[3] = {B1x="<<Box1pos[0]<<",B1y="<<Box1pos[1]<<",B1z="<<Box1pos[2]<<"};\n" <<endl; // length of edges
@@ -226,35 +324,13 @@ static void simLoop (int pause)
 
  */
 
-
     counter++;   
 
-
-
-}
-
-//This function checks for static equilibrium
-/* Later we could turn this into a bool return. Additionally, one
-*  could feed in dReal types instead of doubles. One would also
-*  want to be able to feed in an arbitrary number of object data.
-*
-*/
-static void inStaticEquilibrium(double startZ, double endZ ){
-
-    double deltaZ = std::abs(startZ - endZ);
-    cout << "StartPosition: " << startZ << " \n" << endl;
-    cout << "EndPosition: " << endZ << " \n" << endl;
-    cout << "delta Z: " << deltaZ << " \n" << endl;
-    cout << "counter = " << COUNT  << " \n" << endl;
-    cout << "THRESHHOLD : " << THRESHHOLD << " \n" << endl;
-    //Check if object moved since initialization
-    if ( (deltaZ) > THRESHHOLD){
-        cout << "FALSE: Not in static equilibrium\n" << endl;
-    } else 
-        cout << "True: Is in static equilibrium\n" << endl;
 }
 
 
+
+//was supposed to be a function that printed final positions
 static void printEndpositions(const dReal *Box1pos){
 
 }
@@ -285,47 +361,31 @@ void  prepDrawStuff() {
 int main (int argc, char *argv[])
 {
 
-  //My addition
-  //dReal B3x=-1.0, B3y=0.1, B3z=4.0;
-
+  //some constant prob unused though?
   dReal x0 = 0.0, y0 = 0.0, z0 = 2.0;
   dMass m1;
 
+  //initialize the space
   prepDrawStuff();
-
   dInitODE();
   world = dWorldCreate();
   space = dHashSpaceCreate(0);
   contactgroup = dJointGroupCreate(0);
+  dWorldSetGravity(world,0,0,-9.8);   //set gravity z position -9.8 m/s^2
 
-  dWorldSetGravity(world,0,0,-9.8);
-
-  // Create a ground
+  // Create ground
   ground = dCreatePlane(space,0,0,1,0);
 
   // Create a ball
-  ball.body = dBodyCreate(world);
-  dMassSetZero(&m1);
-  dMassSetSphereTotal(&m1,mass,radius);
-  dBodySetMass(ball.body,&m1);
-  dBodySetPosition(ball.body, centerSphr[0], centerSphr[1], centerSphr[2]);
-  //dBodySetPosition(ball.body, x0, y0, z0);
-  ball.geom = dCreateSphere(space,radius);
-  dGeomSetBody(ball.geom,ball.body);
+  createBall(ball, centerSphr, radius);
 
-  //create sphere
-  // ????
-  //create box1
+  //create boxes
   createBox(box1, center1, sides1, B1matrix);
-  //create box3
   createBox(box2, center2, sides2, B2matrix);
-  //create box3
   createBox(box3, center3, sides3, B3matrix);
-  //create box3
   createBox(box4, center4, sides4, B4matrix);
 
-
-
+  //Enter the simulation loop
   dsSimulationLoop (argc,argv,352,288,&fn);
 
   dWorldDestroy (world);
