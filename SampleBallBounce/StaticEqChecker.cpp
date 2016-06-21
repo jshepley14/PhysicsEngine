@@ -176,15 +176,18 @@ void newScene()
     // destroy
     dJointGroupDestroy(contactgroup);
     destroyBox(box1);
-    //destroyBox(box2);
-    //destroyBox(box3);
-    //destroyBox(box4);
-    //destroyBall(ball);
+    destroyBox(box2);
+    destroyBox(box3);
+    destroyBox(box4);
+    destroyBall(ball);
 
     // create
     contactgroup = dJointGroupCreate(0);
     createBox(box1, NewCenter3, sides1, B1matrix);
-    //createBall(ball, center1, radius +.1);
+    createBox(box2, center4, sides1, B1matrix);
+    createBox(box3, center3, sides1, B1matrix);
+    createBox(box4, center1, sides1, B1matrix);
+    createBall(ball, center1, radius +.1);
 }
 
 //Collisions Detection
@@ -287,7 +290,8 @@ static void simLoop (int pause)
        
     }
 
-  if (counter == 100){
+
+  if (counter == 20){
       cout<<"RESTART"<<endl;
       newScene();
       counter =0;
