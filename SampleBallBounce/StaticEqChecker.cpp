@@ -66,18 +66,18 @@ const dReal center2[3] = {B2x=0.0,B2y=-0.8,B2z=0.5}; // length of edges
 const dReal center3[3] = {B3x=-0.8,B3y=0.0,B3z=0.5}; // length of edges
 const dReal center4[3] = {B4x=0.8,B4y=0.0,B4z=0.5}; // length of edges
 //Rotation declarations
-const dMatrix3 B1matrix[3][3] = {{ 1, 0, 0},
-                                 { 0, 1, 0},
-                                 { 0, 1, 1}  }; 
-const dMatrix3 B2matrix[3][3] = {{ 1, 0, 0},
-                                 { 0, 1, 0},
-                                 { 0, 0, 1}  }; 
-const dMatrix3 B3matrix = {       1, 0, 0,
-                                  0, 0, 0,
-                                  0, 0, 0  }; 
-const dMatrix3 B4matrix[3][3] = {{ 1, 0, 0},
-                                 { 0, 1, 0},
-                                 { 0, 0, 1}  }; 
+const dMatrix3 B1matrix = { 1, 0, 0,
+                            0, 0, 0,
+                            0, 0, 0  }; 
+const dMatrix3 B2matrix = { 1, 0, 0,
+                            0, 0, 0,
+                            0, 0, 0  }; 
+const dMatrix3 B3matrix = { 1, 0, 0,
+                            0, 0, 0,
+                            0, 0, 0  }; 
+const dMatrix3 B4matrix = { 1, 0, 0,
+                            0, 0, 0,
+                            0, 0, 0  }; 
 
 
 
@@ -112,6 +112,13 @@ static void createBox(MyObject &box, const dReal* center, const dReal* sides, co
     dGeomSetBody(box.geom,box.body);    
 }
 
+static void drawBox( MyObject &box, const dReal* sides){
+    const dReal *pos1,*R1;
+    pos1 = dBodyGetPosition(box.body);
+    R1   = dBodyGetRotation(box.body);
+    dsDrawBox(pos1,R1,sides);
+}
+
 static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 {
   const int N = 10;
@@ -138,10 +145,12 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 static void simLoop (int pause)
 {
   const dReal *pos,*R;
+
+  /*
   const dReal *Box1pos, *Box1R;
   const dReal *Box2pos, *Box2R;
   const dReal *Box3pos, *Box3R;
-  const dReal *Box4pos, *Box4R;
+  */
  
   dSpaceCollide(space,0,&nearCallback);
   dWorldStep(world,TIMESTEP);
@@ -158,39 +167,30 @@ static void simLoop (int pause)
   R   = dBodyGetRotation(ball.body);
   dsDrawSphere(pos,R,radius);
 
-  dsSetColor(1,0,0);
-  //draw Box1
-  Box1pos = dBodyGetPosition(box1.body);
-  Box1R   = dBodyGetRotation(box1.body);
-  dsDrawBox(Box1pos,Box1R,sides1);
 
-  dsSetColor(0,1,0);
-   //draw Box2
-  Box2pos = dBodyGetPosition(box2.body);
-  Box2R   = dBodyGetRotation(box2.body);
-  dsDrawBox(Box2pos,Box2R,sides2);
+    dsSetColor(1,0,0);
+    drawBox(box1, sides1);
 
+    dsSetColor(0,1,0);
+    drawBox(box2, sides2);
+
+    dsSetColor(0,0,1);
+    drawBox(box3, sides3);
+
+    dsSetColor(0,12,200);
+    drawBox(box4, sides4);
   
-  dsSetColor(0,0,1);
-  //draw Box3
-  Box3pos = dBodyGetPosition(box3.body);
-  Box3R   = dBodyGetRotation(box3.body);
-  dsDrawBox(Box3pos,Box3R,sides3);
-  
-
-dsSetColor(0,12,200);
-   //draw Box4
-  Box4pos = dBodyGetPosition(box4.body);
-  Box4R   = dBodyGetRotation(box4.body);
-  dsDrawBox(Box4pos,Box4R,sides4);
 
 
   /*
    *  Static Equilibrium Detection
    *  
   */ 
+  
   if (counter == COUNT){
-        inStaticEquilibrium(B4z, Box4pos[2]); //feed it in the Zinital and Zfinal coordinates of Box4
+
+      cout<<"TEST:"<<dBodyGetPosition(box1.body)[2]<<endl;
+       //inStaticEquilibrium(B3z, Box3pos[2]); //feed it in the Zinital and Zfinal coordinates of Box4
     }
 
    
@@ -200,6 +200,8 @@ dsSetColor(0,12,200);
    *  instead of doing Box1pos to access the coordinates maybe I should do 
    *  dBodyGetPosition(box1.body) and dBodyGetRotation(box1.body) so that its generalized.
   */ 
+
+  /*
   if (counter == 1) { //previously used 400 instead of COUNT
     cout << "const dReal centerSphr[3] = {S1x="<<pos[0]<<",S1y="<<pos[1]<<",S1z="<<pos[2]<<"};\n" <<endl; // length of edges
     cout << "const dReal center1[3] = {B1x="<<Box1pos[0]<<",B1y="<<Box1pos[1]<<",B1z="<<Box1pos[2]<<"};\n" <<endl; // length of edges
@@ -215,12 +217,14 @@ dsSetColor(0,12,200);
     cout<<"const dMatrix3 B3matrix[3][3] = {  { "<<Box3R[0]<<","<<Box3R[1]<<","<<Box3R[2]<<"},"<<endl;
     cout<<"                            { "<<Box3R[3]<<","<<Box3R[4]<<","<<Box3R[5]<<"},"<<endl;
     cout<<"                            { "<<Box3R[6]<<","<<Box3R[7]<<","<<Box3R[8]<<"}  };"<<endl;
+   
     cout<<"const dMatrix3 B4matrix[3][3] = {  { "<<Box4R[0]<<","<<Box4R[1]<<","<<Box4R[2]<<"},"<<endl;
     cout<<"                            { "<<Box4R[3]<<","<<Box4R[4]<<","<<Box4R[5]<<"},"<<endl;
     cout<<"                            { "<<Box4R[6]<<","<<Box4R[7]<<","<<Box4R[8]<<"}  };"<<endl;
+   
   }
 
-
+ */
 
 
     counter++;   
@@ -309,57 +313,16 @@ int main (int argc, char *argv[])
   ball.geom = dCreateSphere(space,radius);
   dGeomSetBody(ball.geom,ball.body);
 
-  // Create a box1
-  box1.body = dBodyCreate(world);
-  dMassSetZero(&m1);
-  dBodySetPosition(box1.body, B1x-1+1, B1y, B1z);
-  dMassSetBoxTotal(&m1,mass,sides1[0], sides1[1], sides1[2]);
-  dBodySetMass(box1.body,&m1);
-  dBodySetPosition(box1.body,center1[0], center1[1], center1[2]);
-  cout<<"ignore->"<<y0+-1.1<<" "<<z0+2<< endl;
-  //dBodySetPosition(box1.body, x0, y0+0.1, z0+2);
-  dBodySetRotation (box1.body, B1matrix[3][3]);      //Can comment this out if you dont want weird rotation
-  box1.geom = dCreateBox(space,sides1[0], sides1[1], sides1[2]);
-  dGeomSetBody(box1.geom,box1.body);
-
-  // Create a box2
-  box2.body = dBodyCreate(world);
-  dMassSetZero(&m1);
-  dMassSetBoxTotal(&m1,mass,sides2[0], sides2[1], sides2[2]);
-  dBodySetMass(box2.body,&m1);
-  dBodySetPosition(box2.body, center2[0], center2[1], center2[2]);
-  dBodySetRotation (box2.body, B2matrix[3][3]);
-  box2.geom = dCreateBox(space,sides2[0], sides2[1], sides2[2]);
-  dGeomSetBody(box2.geom,box2.body);
-
-
+  //create sphere
+  // ????
+  //create box1
+  createBox(box1, center1, sides1, B1matrix);
+  //create box3
+  createBox(box2, center2, sides2, B2matrix);
   //create box3
   createBox(box3, center3, sides3, B3matrix);
-
-/*
-  // Create a box3
-  box3.body = dBodyCreate(world);
-  dMassSetZero(&m1);
-  dMassSetBoxTotal(&m1,mass,sides3[0], sides3[1], sides3[2]);
-  dBodySetMass(box3.body,&m1);
-  dBodySetPosition(box3.body, center3[0], center3[1], center3[2]);
-  dBodySetRotation (box3.body, B3matrix[3][3]);
-  box3.geom = dCreateBox(space,sides3[0], sides3[1], sides3[2]);
-  dGeomSetBody(box3.geom,box3.body);
-*/
-
-
-
-  // Create a box4
-  box4.body = dBodyCreate(world);
-  dMassSetZero(&m1);
-  dMassSetBoxTotal(&m1,mass,sides4[0], sides4[1], sides4[2]);
-  dBodySetMass(box4.body,&m1);
-  dBodySetPosition(box4.body, center4[0], center4[1], center4[2]);
-  dBodySetRotation (box4.body, B4matrix[3][3]);
-  box4.geom = dCreateBox(space,sides4[0], sides4[1], sides4[2]);
-  dGeomSetBody(box4.geom,box4.body);
-
+  //create box3
+  createBox(box4, center4, sides4, B4matrix);
 
 
 
