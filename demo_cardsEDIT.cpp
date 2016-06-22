@@ -29,9 +29,12 @@ struct Card {
     dGeomID geom;
     static const dReal sides[3]; //side lengths
     //static const dReal center[3]; //center position
+    //const dReal* sides
+    
 
     Card()
     {
+        
         body = dBodyCreate(world);
         geom = dCreateBox(space, sides[0], sides[1], sides[2]);
         dGeomSetBody(geom, body);
@@ -63,9 +66,11 @@ struct Box {
     dGeomID geom;
     static const dReal sides[3]; //side lengths
     //static const dReal center[3]; //center position
+    int ID;
 
     Box()
     {
+        
         body = dBodyCreate(world);
         geom = dCreateBox(space, sides[0], sides[1], sides[2]);
         dGeomSetBody(geom, body);
@@ -86,7 +91,32 @@ struct Box {
         dsDrawBox(dBodyGetPosition(body),
                   dBodyGetRotation(body), sides);
     }
+    void createObject(int ID){
+        this->ID = ID;
+    }
+    
+    int getID() {
+        cout<<"ID"<<ID<<endl;
+    }
+    
+
 };
+
+/*
+class Object                   // begin declaration of the class
+{
+    dBodyID body;
+    dGeomID geom;
+    static const dReal sides[3]; //side lengths
+    public:
+    Object();
+*/
+
+
+
+
+
+
 
 //set up with dimensions
 static const dReal Boxwidth=.5, Boxthikness=.02, Boxlength=1;
@@ -194,7 +224,9 @@ void newBoxScene() {
     boxes.resize(1);
     //create cards
     boxes[0] = new Box;
-    dBodySetPosition(boxes[0]->body, 1, 1, 2);
+    boxes[0]->createObject(2);
+    boxes[0]->getID();
+    dBodySetPosition(boxes[0]->body, 1, 1, 2);    
     //dBodySetRotation(mycards[0]->body, );
     puts("test");
 }
