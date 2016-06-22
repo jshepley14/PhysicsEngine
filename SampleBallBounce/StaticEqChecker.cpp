@@ -169,9 +169,13 @@ static void destroyBall(MyObject ball)
 
 
 
-
+/*
 //edit this function
-void newScene()
+void newScene(MyObject box1, const dReal* center1, const dReal* sides1, const dMatrix3 B1matrix,
+              MyObject box2, const dReal* center2, const dReal* sides2, const dMatrix3 B2matrix,
+              MyObject box3, const dReal* center3, const dReal* sides3, const dMatrix3 B3matrix,
+              MyObject box4, const dReal* center4, const dReal* sides4, const dMatrix3 B4matrix,
+              MyObject ball, const dReal* centerSphr, const dReal radius )
 {
     // destroy
     dJointGroupDestroy(contactgroup);
@@ -183,12 +187,42 @@ void newScene()
 
     // create
     contactgroup = dJointGroupCreate(0);
-    createBox(box1, NewCenter3, sides1, B1matrix);
-    createBox(box2, center4, sides1, B1matrix);
-    createBox(box3, center3, sides1, B1matrix);
-    createBox(box4, center1, sides1, B1matrix);
-    createBall(ball, center1, radius +.1);
+    //boxes
+    createBox(box1, center1, sides1, B1matrix);
+    createBox(box2, center2, sides2, B2matrix);
+    createBox(box3, center3, sides3, B3matrix);
+    createBox(box4, center4, sides4, B4matrix);
+    //ball
+    createBall(ball, centerSphr, radius);
 }
+
+*/
+
+void newScene(MyObject &box1, const dReal* center1, const dReal* sides1, const dMatrix3 B1matrix,
+              MyObject &ball, const dReal* centerSphr, const dReal radius )
+{
+    // destroy
+    //dJointGroupDestroy(contactgroup);
+    destroyBox(box1);
+    //destroyBox(box2);
+    //destroyBox(box3);
+    //destroyBox(box4);
+    destroyBall(ball);
+
+    // create
+    //contactgroup = dJointGroupCreate(0);
+    //boxes
+    createBox(box1, center1, sides1, B1matrix);
+    //createBox(box2, center2, sides2, B2matrix);
+    //createBox(box3, center3, sides3, B3matrix);
+    //createBox(box4, center4, sides4, B4matrix);
+    //ball
+    createBall(ball, centerSphr, radius);
+}
+
+
+
+
 
 //Collisions Detection
 static void nearCallback(void *data, dGeomID o1, dGeomID o2)
@@ -291,9 +325,10 @@ static void simLoop (int pause)
     }
 
 
-  if (counter == 20){
+  if (counter == 50){ //20
       cout<<"RESTART"<<endl;
-      newScene();
+     newScene(box1, NewCenter3,  sides1, B1matrix,
+              ball, centerSphr, radius);
       counter =0;
   }
 
