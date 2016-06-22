@@ -35,7 +35,7 @@ static int flag = 0; //<-don't need this?
 dsFunctions fn;
 
 //object construction variables
-const dReal   radius = 1.0; //sphere
+const dReal   radius = 0.2; //1.0; //sphere
 const dReal   mass   = 1.0;
 
 
@@ -58,7 +58,7 @@ dReal B3x, B3y, B3z; //Box3
 dReal B4x, B4y, B4z; //Box4
 
 
-
+//TITLE: Balanced ball on four blocks
 //Position declarations
 const dReal centerSphr[3] = {S1x=0.0,S1y=0,S1z=1.9}; 
 const dReal center1[3] = {B1x=0.0,B1y=0.8,B1z=0.5}; 
@@ -81,7 +81,8 @@ const dMatrix3 B4matrix = { 1, 0, 0,
 
 
 
-
+//....................................................................................................
+//TITLE: Exploding configuration
 const dReal NewCenter1[3] = {B3x=0,B3y=0,B3z=2};
 const dReal NewCenter2[3] = {B3x=-1,B3y=0,B3z=2};
 const dReal NewCenter3[3] = {B3x=1,B3y=4,B3z=2};
@@ -89,6 +90,53 @@ const dReal NewCenter4[3] = {B3x=0,B3y=0,B3z=5};
 
 
 
+//....................................................................................................
+//TITLE: Dropping four boxes and a sphere from the air
+//ID: 2
+//Position declarations
+const dReal centerSphr_2[3] = {S1x=0.0,S1y=0.0,S1z=2.0}; // length of edges
+const dReal center1_2[3] = {B1x=0.0,B1y=0.1,B1z=4.0}; // length of edges
+const dReal center2_2[3] = {B2x=0.0,B2y=1.0,B2z=4.0}; // length of edges
+const dReal center3_2[3] = {B3x=-1.0,B3y=0.1,B3z=4.0}; // length of edges
+const dReal center4_2[3] = {B4x=1.0,B4y=0.1,B4z=4.0}; // length of edges
+
+//Rotation declarations
+const dMatrix3 B1matrix_2 = { 0, 1, 1,
+                              0, 1, 1,
+                              0, 1, 1  }; 
+const dMatrix3 B2matrix_2 = { 0,  1,   1,
+                              0, 0.5, 1,
+                              0, 0.7, 1  }; 
+const dMatrix3 B3matrix_2 = { 0,   1, 0,
+                              0.8, 1, 1,
+                              0, 0.3, 1  }; 
+const dMatrix3 B4matrix_2 = { 0, 1, 1,
+                              0, 1, 1,
+                              0, 1, 1  }; 
+
+//....................................................................................................
+//TITLE: Box is balanced on sphere. Four boxes and a sphere in static equilibrium, 
+//ID: 3
+//Position declarations
+const dReal centerSphr_3[3] = {S1x=0.222523,S1y=-0.0803006,S1z=0.2};
+const dReal center1_3[3] = {B1x=0.315066,B1y=0.120175,B1z=0.590846};
+const dReal center2_3[3] = {B2x=0.305423,B2y=0.600279,B2z=0.25};
+const dReal center3_3[3] = {B3x=-1.08545,B3y=-0.410903,B3z=0.25};
+const dReal center4_3[3] = {B4x=1.13042,B4y=0.0812032,B4z=0.5};
+
+//Rotation declarations
+const dMatrix3 B1matrix_3 = {-0.0343974,-1.49881e-11, 0.997988,
+                                0,          -0.30751, 0.942834,
+                             -0.0085887,        0,   -0.930998  };
+const dMatrix3 B2matrix_3 = { -3.35709e-12,-1.27513e-11,     1,
+                             0,            -6.47146e-13,     1,
+                             1.27513e-11,           0,      -1  };
+const dMatrix3 B3matrix_3 = {-4.82185e-16, -0.0168371,  0.999858,
+                                0,        -1.73472e-18, 0.999858,
+                             0.0168371,          0,          -1  };
+const dMatrix3 B4matrix_3 = {1,           -3.61907e-18, 6.88306e-20,
+                             0,            3.61907e-18,          1,
+                             -6.39488e-19,         0,      -6.88306e-20  };
 
 
 //********************************************************************************************8*******************
@@ -268,11 +316,11 @@ static void inStaticEquilibrium(double startZ, MyObject &object){
 
     double endZ = dBodyGetPosition(object.body)[2];
     double deltaZ = std::abs(startZ - endZ);
-    cout << "StartPosition: " << startZ << " \n" << endl;
-    cout << "EndPosition: " << endZ << " \n" << endl;
-    cout << "delta Z: " << deltaZ << " \n" << endl;
-    cout << "counter = " << COUNT  << " \n" << endl;
-    cout << "THRESHHOLD : " << THRESHHOLD << " \n" << endl;
+    //cout << "StartPosition: " << startZ << " \n" << endl;
+    //cout << "EndPosition: " << endZ << " \n" << endl;
+    //cout << "delta Z: " << deltaZ << " \n" << endl;
+    //cout << "counter = " << COUNT  << " \n" << endl;
+    //cout << "THRESHHOLD : " << THRESHHOLD << " \n" << endl;
     //Check if object moved since initialization
     if ( (deltaZ) > THRESHHOLD){
         cout << "FALSE: Not in static equilibrium\n" << endl;
@@ -324,12 +372,14 @@ static void simLoop (int pause)
    *  Static Equilibrium Detection
    *  
   */ 
+
+  //  To Do:  Eventually go back to card demo and ask Shvivam to help you make a class/constructor
+  //   Fix the static equ checker below, fix the inputs etc.
   
    if (counter == COUNT){ //now we want to check   
-       inStaticEquilibrium(B3z, box3); //feed it in the Zinital and Zfinal coordinates of Box4
+       inStaticEquilibrium(B2z, box2); //feed it in the Zinital and Zfinal coordinates of Box4
        
     }
-
 
   if (counter == 100){ //20
       cout<<"RESTART"<<endl;
@@ -338,8 +388,83 @@ static void simLoop (int pause)
               box3, NewCenter3, sides1, B3matrix,
               box4, NewCenter4, sides1, B4matrix,
               ball, centerSphr, radius);
+      
+  }
+
+  if (counter == COUNT+100){ //now we want to check   
+       inStaticEquilibrium(B2z, box2); //feed it in the Zinital and Zfinal coordinates of Box4
+       
+    }
+
+
+  if (counter == 200){ //20
+      cout<<"RESTART"<<endl;
+     newScene(box1, center1_2, sides1, B1matrix_2,
+              box2, center2_2, sides1, B2matrix_2,
+              box3, center3_2, sides1, B3matrix_2,
+              box4, center4_2, sides1, B4matrix_2,
+              ball, centerSphr_2, radius);
+      
+  }
+
+  if (counter == COUNT+200){ //now we want to check   
+       inStaticEquilibrium(B2z, box2); //feed it in the Zinital and Zfinal coordinates of Box4
+       
+    }
+
+  if (counter == 300){ //20
+      cout<<"RESTART"<<endl;
+     newScene(box1, center1_3, sides1, B1matrix_3,
+              box2, center2_3, sides1, B2matrix_3,
+              box3, center3_3, sides1, B3matrix_3,
+              box4, center4_3, sides1, B4matrix_3,
+              ball, centerSphr_3, radius);
+      
+  }
+
+  if (counter == COUNT+300){ //now we want to check   
+       inStaticEquilibrium(B2z, box2); //feed it in the Zinital and Zfinal coordinates of Box4
+       
+    }
+
+  if (counter == 400){ //20
+      cout<<"RESTART"<<endl;
+     newScene(box1, center1, sides1, B1matrix,
+              box4, center2, sides1, B2matrix,
+              box3, center3, sides1, B3matrix,
+              box2, center4, sides1, B4matrix,
+              ball, centerSphr, radius);
+      
+  }
+
+  if (counter == COUNT+400){ //now we want to check   
+       inStaticEquilibrium(B2z, box2); //feed it in the Zinital and Zfinal coordinates of Box4
+     counter =0;  
+    }
+
+/*
+  if (counter == 500){ //20
+      cout<<"RESTART"<<endl;
+     newScene(box1, NewCenter1, sides1, B1matrix,
+              box2, NewCenter2, sides1, B2matrix,
+              box3, NewCenter3, sides1, B3matrix,
+              box4, NewCenter4, sides1, B4matrix,
+              ball, centerSphr, radius);
+      
+  }
+
+  if (counter == 600){ //20
+      cout<<"RESTART"<<endl;
+     newScene(box1, NewCenter1, sides1, B1matrix,
+              box2, NewCenter2, sides1, B2matrix,
+              box3, NewCenter3, sides1, B3matrix,
+              box4, NewCenter4, sides1, B4matrix,
+              ball, centerSphr, radius);
       counter =0;
   }
+  */
+
+
 
    
   /*
