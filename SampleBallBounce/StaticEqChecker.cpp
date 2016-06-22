@@ -82,7 +82,10 @@ const dMatrix3 B4matrix = { 1, 0, 0,
 
 
 
-const dReal NewCenter3[3] = {B3x=0,B3y=0,B3z=2};
+const dReal NewCenter1[3] = {B3x=0,B3y=0,B3z=2};
+const dReal NewCenter2[3] = {B3x=-1,B3y=0,B3z=2};
+const dReal NewCenter3[3] = {B3x=1,B3y=4,B3z=2};
+const dReal NewCenter4[3] = {B3x=0,B3y=0,B3z=5};
 
 
 
@@ -199,23 +202,26 @@ void newScene(MyObject box1, const dReal* center1, const dReal* sides1, const dM
 */
 
 void newScene(MyObject &box1, const dReal* center1, const dReal* sides1, const dMatrix3 B1matrix,
+              MyObject &box2, const dReal* center2, const dReal* sides2, const dMatrix3 B2matrix,
+              MyObject &box3, const dReal* center3, const dReal* sides3, const dMatrix3 B3matrix,
+              MyObject &box4, const dReal* center4, const dReal* sides4, const dMatrix3 B4matrix,
               MyObject &ball, const dReal* centerSphr, const dReal radius )
 {
     // destroy
-    //dJointGroupDestroy(contactgroup);
+    //dJointGroupDestroy(contactgroup); <- do we need this?
     destroyBox(box1);
-    //destroyBox(box2);
-    //destroyBox(box3);
-    //destroyBox(box4);
+    destroyBox(box2);
+    destroyBox(box3);
+    destroyBox(box4);
     destroyBall(ball);
 
     // create
-    //contactgroup = dJointGroupCreate(0);
+    //contactgroup = dJointGroupCreate(0);  <- do we need this?
     //boxes
     createBox(box1, center1, sides1, B1matrix);
-    //createBox(box2, center2, sides2, B2matrix);
-    //createBox(box3, center3, sides3, B3matrix);
-    //createBox(box4, center4, sides4, B4matrix);
+    createBox(box2, center2, sides2, B2matrix);
+    createBox(box3, center3, sides3, B3matrix);
+    createBox(box4, center4, sides4, B4matrix);
     //ball
     createBall(ball, centerSphr, radius);
 }
@@ -325,9 +331,12 @@ static void simLoop (int pause)
     }
 
 
-  if (counter == 50){ //20
+  if (counter == 100){ //20
       cout<<"RESTART"<<endl;
-     newScene(box1, NewCenter3,  sides1, B1matrix,
+     newScene(box1, NewCenter1, sides1, B1matrix,
+              box2, NewCenter2, sides1, B2matrix,
+              box3, NewCenter3, sides1, B3matrix,
+              box4, NewCenter4, sides1, B4matrix,
               ball, centerSphr, radius);
       counter =0;
   }
