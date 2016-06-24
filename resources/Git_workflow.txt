@@ -1,0 +1,13 @@
+git add file.cpp   
+git commit -m "message goes here" 
+
+
+git push  
+
+git log
+git checkout 1Gswhd1
+
+when finished,
+
+git checkout master         
+

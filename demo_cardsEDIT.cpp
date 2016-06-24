@@ -61,6 +61,12 @@ static const dReal cwidth=.5, cthikness=.02, clength=1;
 const dReal Card::sides[3] = { cwidth, cthikness, clength };
 
 
+
+/****************   To Do     ********************
+//attempt to make a constructor for Box
+//otherwise, attempt to make a class
+**************************************************/
+
 struct Box {
     dBodyID body;
     dGeomID geom;
@@ -93,6 +99,7 @@ struct Box {
     }
     void createObject(int ID){
         this->ID = ID;
+        
     }
     
     int getID() {
@@ -102,15 +109,33 @@ struct Box {
 
 };
 
-/*
+
 class Object                   // begin declaration of the class
 {
+
+    public:
     dBodyID body;
     dGeomID geom;
+    static const dReal center[3]; //side lengths
     static const dReal sides[3]; //side lengths
-    public:
-    Object();
+    static const dMatrix3 B1matrix;
+    int ID;
+    Object(int oID); //constructor
+    ~Object(); //destructor
+};
+
+
+/*
+               const dReal* ocenter, 
+               const dReal* osides, 
+               const dMatrix3 oMatrixR
 */
+
+Object::Object(int oID) {       
+        ID=oID;
+}
+
+Object::~Object(void) {} 
 
 
 
@@ -197,7 +222,7 @@ void place_cards()
 
 
 std::vector<Card*> mycards;
-int numberOfObjects =1;
+int numberOfmycards =1;
 void newScene() {
     
     //destroy cards
@@ -206,6 +231,7 @@ void newScene() {
 
     mycards.resize(1);
     //create cards
+    
     mycards[0] = new Card;
     dBodySetPosition(mycards[0]->body, 1, 0, 2);
     //dBodySetRotation(mycards[0]->body, );
@@ -217,19 +243,47 @@ std::vector<Box*> boxes;
 int numberOfBoxObjects =1;
 void newBoxScene() {
     
-    //destroy cards
+    //destroy boxes
     for (int i=0; i<boxes.size(); ++i)
         delete boxes[i];
 
     boxes.resize(1);
-    //create cards
+    //create boxes
+
     boxes[0] = new Box;
     boxes[0]->createObject(2);
     boxes[0]->getID();
+    cout<<"Test"<<boxes[0]->ID<<endl;
     dBodySetPosition(boxes[0]->body, 1, 1, 2);    
     //dBodySetRotation(mycards[0]->body, );
-    puts("test");
+    
 }
+
+
+
+//
+//  try to figure out why this object class isn't working
+//maybe just try to edit the Box struct, look at vector types.
+
+std::vector<Object> objects;
+int numberOfObjects =1;
+void newObjectScene() {
+    puts("test");
+    //destroy objects
+    for (int i=0; i<objects.size(); ++i)
+        delete objects[i];
+
+    objects.resize(1);
+    //create cards
+
+    Object obj(99);
+    objects[0] = obj;
+    cout<<"test Object ID: "<<objects[0].ID<<endl;
+    //dBodySetPosition(boxes[0]->body, 1, 1, 2);    
+    //dBodySetRotation(mycards[0]->body, );
+    
+}
+
 
 
 
@@ -304,6 +358,11 @@ void command(int c)
         case 'b':
             newBoxScene();
             break;
+        case 'o':
+            puts("test k");
+            cout<<"test"<<endl;
+            newObjectScene();
+            break;
     }
 }
 
@@ -334,6 +393,7 @@ int main(int argc, char **argv)
     place_cards();
     newScene();
     newBoxScene();
+    newObjectScene();
 
     // run simulation
     dsSimulationLoop (argc, argv, 640, 480, &fn);
@@ -342,6 +402,7 @@ int main(int argc, char **argv)
     place_cards();
     newScene(); //added this
     newBoxScene();
+    newObjectScene();
 
     dJointGroupDestroy(contactgroup);
     dWorldDestroy(world);

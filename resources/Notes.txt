@@ -1,0 +1,10 @@
+Notes for implementation.
+
+I need training data to adjust the variables. 
+What's the fastest time I can do for checking an object which is floating?
+This could be a certain classification of inputs, "floating" configurations. However if we could determine that already then we wouldn't need the simulator anyway right?
+
+How fast is the simulator when you take away the drawing function?
+
+What are some cases where there is a true case of static equilibrium?
+I need those cases in order to find the right THRESHOLD value.
