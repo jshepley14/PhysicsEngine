@@ -17,6 +17,9 @@
 #define dsDrawSphere dsDrawSphereD
 #define dsDrawBox  dsDrawBoxD
 #endif
+
+//#define DRAW  //used to switch on or off the drawing of the scene
+
 using namespace std;
 
 //function declarations
@@ -26,12 +29,14 @@ static void printEndpositions(const dReal *Box1pos);
 
 //static equilibrium constants
 static int counter = 0;          //iterator which will reach COUNT
-static int COUNT = 6//10;           //how long until we want to wait to check satic equlibrium?
+static int COUNT = 30; //10;           //how long until we want to wait to check satic equlibrium?
 static double THRESHHOLD = 0.1;  //how much movement is allowed
+static double GRAVITY = -19.8;    
 static double TIMESTEP = 0.02;    /*Time step originally was at 0.01, but we may
-static dobule GRAVITY = 9.8;       *be able to increase this making calculations faster
+                                   *be able to increase this making calculations faster
                                    *most efficient would prob be 0.01 ≤ TIMESTEP ≤ 0.03 */
 //timer variables
+//need to add -std=c++11 right after g++ to compile
 static chrono::steady_clock::time_point startTime, endTime;
 
 //ID declarations
@@ -67,6 +72,7 @@ dReal B4x, B4y, B4z; //Box4
 
 
 //TITLE: Balanced ball on four blocks
+//ID: 1
 //Position declarations
 const dReal centerSphr[3] = {S1x=0.0,S1y=0,S1z=1.9}; 
 const dReal center1[3] = {B1x=0.0,B1y=0.8,B1z=0.5}; 
@@ -91,6 +97,7 @@ const dMatrix3 B4matrix = { 1, 0, 0,
 
 //....................................................................................................
 //TITLE: Exploding configuration
+//ID: 2
 const dReal NewCenter1[3] = {B3x=0,B3y=0,B3z=2};
 const dReal NewCenter2[3] = {B3x=-1,B3y=0,B3z=2};
 const dReal NewCenter3[3] = {B3x=1,B3y=4,B3z=2};
@@ -100,7 +107,7 @@ const dReal NewCenter4[3] = {B3x=0,B3y=0,B3z=5};
 
 //....................................................................................................
 //TITLE: Dropping four boxes and a sphere from the air
-//ID: 2
+//ID: 3
 //Position declarations
 const dReal centerSphr_2[3] = {S1x=0.0,S1y=0.0,S1z=2.0}; // length of edges
 const dReal center1_2[3] = {B1x=0.0,B1y=0.1,B1z=4.0}; // length of edges
@@ -124,7 +131,7 @@ const dMatrix3 B4matrix_2 = { 0, 1, 1,
 
 //....................................................................................................
 //TITLE: Box is balanced on sphere. Four boxes and a sphere in static equilibrium, 
-//ID: 3
+//ID: 4
 //Position declarations
 const dReal centerSphr_3[3] = {S1x=0.222523,S1y=-0.0803006,S1z=0.2};
 const dReal center1_3[3] = {B1x=0.315066,B1y=0.120175,B1z=0.590846};
@@ -146,6 +153,51 @@ const dMatrix3 B4matrix_3 = {1,           -3.61907e-18, 6.88306e-20,
                              0,            3.61907e-18,          1,
                              -6.39488e-19,         0,      -6.88306e-20  };
 
+//....................................................................................................
+//TITLE: box tower
+//ID: 5
+//Position declarations
+const dReal centerSphr_5[3] = {S1x=-2.0,S1y=0,S1z=0.2}; // length of edges
+const dReal center1_5[3] = {B1x=0,B1y=0,B1z=1.26}; // length of edges
+const dReal center2_5[3] = {B2x=-0.5,B2y=0,B2z=0.5}; // length of edges
+const dReal center3_5[3] = {B3x=0.5,B3y=0,B3z=0.5}; // length of edges
+const dReal center4_5[3] = {B4x=0,B4y=0,B4z=1.8}; // length of edges
+//Rotation declarations
+const dMatrix3 B1matrix_5 = { 0, 0, 1,
+                            0, -1, 0,
+                            1, 0, 0  }; 
+const dMatrix3 B2matrix_5 = { 1, 0, 0,
+                            0, 0, 0,
+                            0, 0, 0  }; 
+const dMatrix3 B3matrix_5 = { 1, 0, 0,
+                            0, 0, 0,
+                            0, 0, 0  }; 
+const dMatrix3 B4matrix_5 = { 1, 0, 0,
+                            0, 0, 0,
+                            0, 0, 0  }; 
+
+//....................................................................................................
+//TITLE: leaning block falling.  Example of configuration that requires COUNT to be large OR small Threshold 
+
+//Position declarations
+const dReal centerSphr_6[3] = {S1x=-2.0,S1y=0,S1z=0.2}; // length of edges
+const dReal center1_6[3] = {B1x=0.0,B1y=0,B1z=0.55}; // length of edges
+const dReal center2_6[3] = {B2x=0,B2y=1,B2z=0.5}; // length of edges
+const dReal center3_6[3] = {B3x=0,B3y=2,B3z=0.5}; // length of edges
+const dReal center4_6[3] = {B4x=0,B4y=3,B4z=0.5}; // length of edges
+//Rotation declarations
+const dMatrix3 B1matrix_6 = { 1, 0, 0,
+                            0, 0, 0,
+                            0, 0, 0.5  }; 
+const dMatrix3 B2matrix_6 = { 1, 0, 0,
+                            0, 0, 0,
+                            0, 0, 0  }; 
+const dMatrix3 B3matrix_6 = { 1, 0, 0,
+                            0, 0, 0,
+                            0, 0, 0  }; 
+const dMatrix3 B4matrix_6 = { 1, 0, 0,
+                            0, 0, 0,
+                            0, 0, 0  }; 
 
 //********************************************************************************************8*******************
 //object declarations
@@ -181,7 +233,10 @@ static void drawBox( MyObject &box, const dReal* sides){
     const dReal *pos1,*R1;
     pos1 = dBodyGetPosition(box.body);
     R1   = dBodyGetRotation(box.body);
+    #ifdef DRAW
     dsDrawBox(pos1,R1,sides);
+    #else
+    #endif
 }
 
 //destroys a box
@@ -226,36 +281,6 @@ static void destroyBall(MyObject ball)
     dGeomDestroy(ball.geom);
 }
 
-
-
-/*
-//edit this function
-void newScene(MyObject box1, const dReal* center1, const dReal* sides1, const dMatrix3 B1matrix,
-              MyObject box2, const dReal* center2, const dReal* sides2, const dMatrix3 B2matrix,
-              MyObject box3, const dReal* center3, const dReal* sides3, const dMatrix3 B3matrix,
-              MyObject box4, const dReal* center4, const dReal* sides4, const dMatrix3 B4matrix,
-              MyObject ball, const dReal* centerSphr, const dReal radius )
-{
-    // destroy
-    dJointGroupDestroy(contactgroup);
-    destroyBox(box1);
-    destroyBox(box2);
-    destroyBox(box3);
-    destroyBox(box4);
-    destroyBall(ball);
-
-    // create
-    contactgroup = dJointGroupCreate(0);
-    //boxes
-    createBox(box1, center1, sides1, B1matrix);
-    createBox(box2, center2, sides2, B2matrix);
-    createBox(box3, center3, sides3, B3matrix);
-    createBox(box4, center4, sides4, B4matrix);
-    //ball
-    createBall(ball, centerSphr, radius);
-}
-
-*/
 
 void newScene(MyObject &box1, const dReal* center1, const dReal* sides1, const dMatrix3 B1matrix,
               MyObject &box2, const dReal* center2, const dReal* sides2, const dMatrix3 B2matrix,
@@ -324,16 +349,17 @@ static void inStaticEquilibrium(double startZ, MyObject &object){
 
     double endZ = dBodyGetPosition(object.body)[2];
     double deltaZ = std::abs(startZ - endZ);
-    //cout << "StartPosition: " << startZ << " \n" << endl;
-    //cout << "EndPosition: " << endZ << " \n" << endl;
-    //cout << "delta Z: " << deltaZ << " \n" << endl;
     //cout << "counter = " << COUNT  << " \n" << endl;
     //cout << "THRESHHOLD : " << THRESHHOLD << " \n" << endl;
     //Check if object moved since initialization
     if ( (deltaZ) > THRESHHOLD){
-        cout << "FALSE: Not in static equilibrium\n" << endl;
-    } else 
-        cout << "True: Is in static equilibrium\n" << endl;
+        //cout << "FALSE: Not in static equilibrium" << endl;
+    } else{ 
+      //  cout << "TRUE: Is in static equilibrium" << endl;
+    }
+   // cout << "StartPosition: " << startZ << " " << endl;
+  //  cout << "EndPosition: " << endZ << " " << endl;
+   // cout << "delta Z: " << deltaZ << " " << endl;
 }
 
 
@@ -344,7 +370,10 @@ static void inStaticEquilibrium(double startZ, MyObject &object){
 static void simLoop (int pause)
 {
   
-
+  //start timer
+    if (counter == 0){
+     startTime = chrono::steady_clock::now();
+    }
 
  
   dSpaceCollide(space,0,&nearCallback);
@@ -352,28 +381,31 @@ static void simLoop (int pause)
   dJointGroupEmpty(contactgroup);
 
   // what is this flag stuff?
-  if (flag == 0) dsSetColor(1.0, 0.0, 0.0);
-  else           dsSetColor(0.0, 0.0, 1.0);
+  //if (flag == 0) dsSetColor(1.0, 0.0, 0.0);
+  //else           dsSetColor(0.0, 0.0, 1.0);
   //
 
 
-  //draw ball (sphere)
-
-    dsSetColor(0.8,.78,.10);
-    drawBall(ball, radius);
-
-    dsSetColor(1,0,0);
-    drawBox(box1, sides1);
-
-    dsSetColor(0,1,0);
-    drawBox(box2, sides2);
-
-    dsSetColor(0,0,1);
-    drawBox(box3, sides3);
-
-    dsSetColor(0,.12,.2); //0,12,200 is a bright turquoise
-    drawBox(box4, sides4);
-  
+   //draw stuff
+   #ifdef DRAW
+     dsSetColor(0.8,.78,.10);
+     drawBall(ball, radius);
+     dsSetColor(1,0,0);
+     drawBox(box1, sides1);
+     dsSetColor(0,1,0);
+     drawBox(box2, sides2);
+     dsSetColor(0,0,1);
+     drawBox(box3, sides3);
+     dsSetColor(0,.12,.2); //0,12,200 is a bright turquoise
+     drawBox(box4, sides4);
+   #else
+     drawBox(box1, sides1); 
+     drawBox(box2, sides2);
+     drawBox(box3, sides3);
+     drawBox(box4, sides4);
+    //print the positions and time step or whatever when your not drawing
+    //printf("%5d steps x=%.3f y=%.3f z=%.3f \n",(int)step++,pos[0],pos[1],pos[2]);
+   #endif
 
 
   /*
@@ -384,13 +416,17 @@ static void simLoop (int pause)
   //  To Do:  Eventually go back to card demo and ask Shvivam to help you make a class/constructor
   //   Fix the static equ checker below, fix the inputs etc.
   
-   if (counter == COUNT){ //now we want to check   
-       inStaticEquilibrium(B2z, box2); //feed it in the Zinital and Zfinal coordinates of Box4
-       
+   if (counter == COUNT){ //now we want to check
+  //  cout<<"FALSE: Scene 1"<<endl;   
+    inStaticEquilibrium(centerSphr[2], ball); //feed it in the Zinital and Zfinal coordinates of Box4
+    //end chrono timer
+    endTime = chrono::steady_clock::now();
+    auto diff = endTime - startTime;
+   // cout << chrono::duration <double, milli> (diff).count() << " ms\n" << endl;
     }
 
-  if (counter == 100){ //20
-      cout<<"RESTART"<<endl;
+  if (counter == COUNT){ //100
+    //  cout<<"FALSE: Scene 2"<<endl;
      newScene(box1, NewCenter1, sides1, B1matrix,
               box2, NewCenter2, sides1, B2matrix,
               box3, NewCenter3, sides1, B3matrix,
@@ -399,14 +435,20 @@ static void simLoop (int pause)
       
   }
 
-  if (counter == COUNT+100){ //now we want to check   
-       inStaticEquilibrium(B2z, box2); //feed it in the Zinital and Zfinal coordinates of Box4
+  if (counter == COUNT*2){ // COUNT + 100now we want to check   
+       inStaticEquilibrium(centerSphr[2], ball); //feed it in the Zinital and Zfinal coordinates of Box4
        
+       //end chrono timer
+    endTime = chrono::steady_clock::now();
+    auto diff = endTime - startTime;
+  //  cout << chrono::duration <double, milli> (diff).count() << " ms\n" << endl;
+    
+    
     }
 
-
-  if (counter == 200){ //20
-      cout<<"RESTART"<<endl;
+///What's up with this scene???  also need to adjust variables
+  if (counter == COUNT*2){ //200
+   //   cout<<"FALSE: Scene 3"<<endl;
      newScene(box1, center1_2, sides1, B1matrix_2,
               box2, center2_2, sides1, B2matrix_2,
               box3, center3_2, sides1, B3matrix_2,
@@ -415,13 +457,13 @@ static void simLoop (int pause)
       
   }
 
-  if (counter == COUNT+200){ //now we want to check   
-       inStaticEquilibrium(B2z, box2); //feed it in the Zinital and Zfinal coordinates of Box4
+  if (counter == COUNT*3){ //now we want to check   
+       inStaticEquilibrium(centerSphr_2[2], ball); //feed it in the Zinital and Zfinal coordinates of Box4
        
     }
 
-  if (counter == 300){ //20
-      cout<<"RESTART"<<endl;
+  if (counter == COUNT*3){ //300
+   //   cout<<"TRUE: Scene 4"<<endl;
      newScene(box1, center1_3, sides1, B1matrix_3,
               box2, center2_3, sides1, B2matrix_3,
               box3, center3_3, sides1, B3matrix_3,
@@ -430,87 +472,53 @@ static void simLoop (int pause)
       
   }
 
-  if (counter == COUNT+300){ //now we want to check   
-       inStaticEquilibrium(B2z, box2); //feed it in the Zinital and Zfinal coordinates of Box4
+  if (counter == COUNT*4){ //now we want to check   
+       inStaticEquilibrium(centerSphr_3[2], ball); //feed it in the Zinital and Zfinal coordinates of Box4
        
     }
 
-  if (counter == 400){ //20
-      cout<<"RESTART"<<endl;
-     newScene(box1, center1, sides1, B1matrix,
-              box4, center2, sides1, B2matrix,
-              box3, center3, sides1, B3matrix,
-              box2, center4, sides1, B4matrix,
-              ball, centerSphr, radius);
+  if (counter == COUNT*4){ //400
+   //   cout<<"TRUE: Scene 5"<<endl;
+     newScene(box1, center1_5, sides1, B1matrix_5,
+              box4, center2_5, sides1, B2matrix_5,
+              box3, center3_5, sides1, B3matrix_5,
+              box2, center4_5, sides1, B4matrix_5,
+              ball, centerSphr_5, radius);
       
   }
 
-  if (counter == COUNT+400){ //now we want to check   
-       inStaticEquilibrium(B2z, box2); //feed it in the Zinital and Zfinal coordinates of Box4
+  if (counter == COUNT*5){ //now we want to check   
+       inStaticEquilibrium(centerSphr_5[2], ball); //feed it in the Zinital and Zfinal coordinates of Box4
 
-    //To DO: try to fix the clock
-        //used for timing program execution
-        dsStop	();
-    
-    
-     
-     //counter =0;  
+        
+
     }
 
-/*
-  if (counter == 500){ //20
-      cout<<"RESTART"<<endl;
-     newScene(box1, NewCenter1, sides1, B1matrix,
-              box2, NewCenter2, sides1, B2matrix,
-              box3, NewCenter3, sides1, B3matrix,
-              box4, NewCenter4, sides1, B4matrix,
-              ball, centerSphr, radius);
+
+
+
+    if (counter == COUNT*5){ //500
+    //  cout<<"FALSE: Scene 6"<<endl;
+     newScene(box1, center1_6, sides1, B1matrix_6,
+              box4, center2_6, sides1, B2matrix_6,
+              box3, center3_6, sides1, B3matrix_6,
+              box2, center4_6, sides1, B4matrix_6,
+              ball, centerSphr_6, radius);
       
   }
 
-  if (counter == 600){ //20
-      cout<<"RESTART"<<endl;
-     newScene(box1, NewCenter1, sides1, B1matrix,
-              box2, NewCenter2, sides1, B2matrix,
-              box3, NewCenter3, sides1, B3matrix,
-              box4, NewCenter4, sides1, B4matrix,
-              ball, centerSphr, radius);
-      counter =0;
-  }
-  */
+  if (counter == COUNT*6){ //now we want to check   
+       inStaticEquilibrium(center1_6[2], box1); //feed it in the Zinital and Zfinal coordinates of Box4
 
+        //end chrono timer
+    endTime = chrono::steady_clock::now();
+    auto diff = endTime - startTime;
+    cout << chrono::duration <double, milli> (diff).count() << " ms\n" << endl;
+    dsStop	();  //break out of the simLoop    
+        //counter = 0;  //loop through all the scenes
+        
+    }
 
-
-   
-  /*
-   *  This next block of code prints out all the final positions and rotations
-   *  so that one could paste the results back into the code and get static equilibrium
-   *  instead of doing Box1pos to access the coordinates maybe I should do 
-   *  dBodyGetPosition(box1.body) and dBodyGetRotation(box1.body) so that its generalized.
-
-  if (counter == 1) { //previously used 400 instead of COUNT
-    cout << "const dReal centerSphr[3] = {S1x="<<pos[0]<<",S1y="<<pos[1]<<",S1z="<<pos[2]<<"};\n" <<endl; // length of edges
-    cout << "const dReal center1[3] = {B1x="<<Box1pos[0]<<",B1y="<<Box1pos[1]<<",B1z="<<Box1pos[2]<<"};\n" <<endl; // length of edges
-    cout << "const dReal center2[3] = {B2x="<<Box2pos[0]<<",B2y="<<Box2pos[1]<<",B2z="<<Box2pos[2]<<"};\n" <<endl; // length of edges
-    cout << "const dReal center3[3] = {B3x="<<Box3pos[0]<<",B3y="<<Box3pos[1]<<",B3z="<<Box3pos[2]<<"};\n" <<endl; // length of edges
-    cout << "const dReal center4[3] = {B4x="<<Box4pos[0]<<",B4y="<<Box4pos[1]<<",B4z="<<Box4pos[2]<<"};\n" <<endl; // length of edges
-    cout<<"const dMatrix3 B1matrix[3][3] = {  { "<<Box1R[0]<<","<<Box1R[1]<<","<<Box1R[2]<<"},"<<endl;
-    cout<<"                            { "<<Box1R[3]<<","<<Box1R[4]<<","<<Box1R[5]<<"},"<<endl;
-    cout<<"                            { "<<Box1R[6]<<","<<Box1R[7]<<","<<Box1R[8]<<"}  };"<<endl;
-    cout<<"const dMatrix3 B2matrix[3][3] = {  { "<<Box2R[0]<<","<<Box2R[1]<<","<<Box2R[2]<<"},"<<endl;
-    cout<<"                            { "<<Box2R[3]<<","<<Box2R[4]<<","<<Box2R[5]<<"},"<<endl;
-    cout<<"                            { "<<Box2R[6]<<","<<Box2R[7]<<","<<Box2R[8]<<"}  };"<<endl;
-    cout<<"const dMatrix3 B3matrix[3][3] = {  { "<<Box3R[0]<<","<<Box3R[1]<<","<<Box3R[2]<<"},"<<endl;
-    cout<<"                            { "<<Box3R[3]<<","<<Box3R[4]<<","<<Box3R[5]<<"},"<<endl;
-    cout<<"                            { "<<Box3R[6]<<","<<Box3R[7]<<","<<Box3R[8]<<"}  };"<<endl;
-   
-    cout<<"const dMatrix3 B4matrix[3][3] = {  { "<<Box4R[0]<<","<<Box4R[1]<<","<<Box4R[2]<<"},"<<endl;
-    cout<<"                            { "<<Box4R[3]<<","<<Box4R[4]<<","<<Box4R[5]<<"},"<<endl;
-    cout<<"                            { "<<Box4R[6]<<","<<Box4R[7]<<","<<Box4R[8]<<"}  };"<<endl;
-   
-  }
-
- */
 
     counter++;   
 
@@ -559,7 +567,7 @@ int main (int argc, char *argv[])
   world = dWorldCreate();
   space = dHashSpaceCreate(0);
   contactgroup = dJointGroupCreate(0);
-  dWorldSetGravity(world,0,0,-9.8);   //set gravity z position -9.8 m/s^2
+  dWorldSetGravity(world,0,0,GRAVITY);   //set gravity z position -9.8 m/s^2
 
   // Create ground
   ground = dCreatePlane(space,0,0,1,0);
@@ -575,15 +583,16 @@ int main (int argc, char *argv[])
 
 
 
-  //start timer
-  auto startTime = chrono::steady_clock::now();   
-  //Enter the simulation loop
-  dsSimulationLoop (argc,argv,352,288,&fn);
   
-  //end timer
-  auto endTime = chrono::steady_clock::now();
-  auto diff = endTime - startTime;
-  cout << chrono::duration <double, milli> (diff).count() << " ms" << endl;
+  #ifdef DRAW
+  dsSimulationLoop (argc,argv,600,480,&fn);
+  #else
+  while (1) {
+    simLoop(0);
+  }
+  #endif
+  
+  
 
 
   dWorldDestroy (world);
