@@ -15,6 +15,9 @@
 #define dsDrawSphere dsDrawSphereD
 #define dsDrawBox  dsDrawBoxD
 #endif
+
+#define DRAW  //used to switch on or off the drawing of the scene
+
 using namespace std;
 
 //function declarations
@@ -171,7 +174,11 @@ static void drawBox( MyObject &box, const dReal* sides){
     const dReal *pos1,*R1;
     pos1 = dBodyGetPosition(box.body);
     R1   = dBodyGetRotation(box.body);
+
+    #ifdef DRAW
     dsDrawBox(pos1,R1,sides);
+    #else
+    #endif
 }
 
 static void nearCallback(void *data, dGeomID o1, dGeomID o2)
@@ -201,7 +208,7 @@ static void simLoop (int pause)
 {
 
 
-//startTime = chrono::steady_clock::now();
+  //startTime = chrono::steady_clock::now();
 
   //keep working on way to confirm that timer is working
   if (counter == 0){
@@ -221,28 +228,41 @@ static void simLoop (int pause)
   dJointGroupEmpty(contactgroup);
 
   // what is this flag stuff?
-  if (flag == 0) dsSetColor(1.0, 0.0, 0.0);
-  else           dsSetColor(0.0, 0.0, 1.0);
+  //if (flag == 0) dsSetColor(1.0, 0.0, 0.0);
+  //else           dsSetColor(0.0, 0.0, 1.0);
   //
 
 
-  //draw sphere
+ 
   pos = dBodyGetPosition(ball.body);
   R   = dBodyGetRotation(ball.body);
+  
+
+ //draw stuff
+#ifdef DRAW
   dsDrawSphere(pos,R,radius);
+  dsSetColor(1,0,0);
+  drawBox(box1, sides1);
+  dsSetColor(0,1,0);
+  drawBox(box2, sides2);
+  dsSetColor(0,0,1);
+  drawBox(box3, sides3);
+  dsSetColor(0,12,200);
+  drawBox(box4, sides4);   
+#else
+  drawBox(box1, sides1);
+  
+  drawBox(box2, sides2);
+  
+  drawBox(box3, sides3);
+  
+  drawBox(box4, sides4);
+  
 
+  //print the positions and time step or whatever when your not drawing
+  //printf("%5d steps x=%.3f y=%.3f z=%.3f \n",(int)step++,pos[0],pos[1],pos[2]);
+#endif
 
-    dsSetColor(1,0,0);
-    drawBox(box1, sides1);
-
-    dsSetColor(0,1,0);
-    drawBox(box2, sides2);
-
-    dsSetColor(0,0,1);
-    drawBox(box3, sides3);
-
-    dsSetColor(0,12,200);
-    drawBox(box4, sides4);
   
 
 
@@ -255,17 +275,7 @@ static void simLoop (int pause)
       double zpos = dBodyGetPosition(box1.body)[2];
       inStaticEquilibrium(B1z, zpos); //feed it in the Zinital and Zfinal coordinates of Box4
 
-      //used for timing program execution
-      /*
-      t2 = clock();
-      float diff ((float)t2-(float)t1);
-      float seconds = diff / CLOCKS_PER_SEC;
-      cout<<seconds<<" sec. to check for static eq"<< endl;
-      */ 
-      //break out of simloop to stop chrono timer
-      //dsStop	();
-
-      //end chrono timer
+  //end chrono timer
   endTime = chrono::steady_clock::now();
   auto diff = endTime - startTime;
   cout << chrono::duration <double, milli> (diff).count() << " ms" << endl;
@@ -273,6 +283,8 @@ static void simLoop (int pause)
   //seconds
   //chrono::duration<double> time_span = chrono::duration_cast<chrono::duration<double>>(endTime - startTime);
   //cout << "It took me " << time_span.count() << " seconds.";
+
+
     }
 
    
@@ -284,7 +296,7 @@ static void simLoop (int pause)
   */ 
 
   /*
-  if (counter == 1) { //previously used 400 instead of COUNT
+  if (counter == 200) { //at 200 assume objects are at rest
     cout << "const dReal centerSphr[3] = {S1x="<<pos[0]<<",S1y="<<pos[1]<<",S1z="<<pos[2]<<"};\n" <<endl; // length of edges
     cout << "const dReal center1[3] = {B1x="<<Box1pos[0]<<",B1y="<<Box1pos[1]<<",B1z="<<Box1pos[2]<<"};\n" <<endl; // length of edges
     cout << "const dReal center2[3] = {B2x="<<Box2pos[0]<<",B2y="<<Box2pos[1]<<",B2z="<<Box2pos[2]<<"};\n" <<endl; // length of edges
@@ -308,11 +320,12 @@ static void simLoop (int pause)
  */
 
 
+    //Dont forget about the counter!
     counter++;   
 
-
-
 }
+
+
 
 //This function checks for static equilibrium
 /* Later we could turn this into a bool return. Additionally, one
@@ -413,12 +426,17 @@ int main (int argc, char *argv[])
   createBox(box4, center4, sides4, B4matrix);
 
 
-  //used for timing
-  t1=clock();
   
   
+  #ifdef DRAW
+  dsSimulationLoop (argc,argv,600,480,&fn);
+  #else
+  while (1) {
+    simLoop(0);
+  }
+  #endif
 
-  dsSimulationLoop (argc,argv,352,288,&fn);
+  //dsSimulationLoop (argc,argv,352,288,&fn);
 
   
 
