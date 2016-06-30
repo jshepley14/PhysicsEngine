@@ -2,46 +2,62 @@
 //
 #include <stdio.h>
 #include "objLoader.h"
+#include <string.h>
+#include <iostream>
+#include <fstream>
+using namespace std;
 
 void printVector(obj_vector *v)
 {
-	printf("(%.2f), ", v->e[0] );
-	printf("(%.2f), ", v->e[1] );
-	printf("(%.2f)  ", v->e[2] );
+	printf("	REAL(%.2f), ", v->e[0] );
+	printf("REAL(%.2f), ", v->e[1] );
+	printf("REAL(%.2f),  ", v->e[2] );
 }
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv){
+
+
+	//used for writing to file
+	ofstream myfile;
+	myfile.open ("results.txt");
+
 	objLoader *objData = new objLoader();
-	objData->load("20mm_cube.obj");
+	objData->load("cube.obj");
 
-	printf("const int VertexCount = %i\n", objData->vertexCount);
-	printf("const int IndexCount = %i\n", objData->faceCount);
-	printf("Number of vertex normals: %i\n", objData->normalCount);
+
+	//try printing with cout<<
 	printf("\n");
-
+	cout<<"const int VertexCount = "<<objData->vertexCount<<";"<<endl;
+	cout<<"const int IndexCount = "<<objData->faceCount<<" * 3;"<<endl;
+	printf("\n");
+	
+	printf("float Vertices[VertexCount * 3] = {\n");
 	//print vertices
-	printf("Vertices: %i\n", objData->vertexCount);
 	for(int i=0; i<objData->vertexCount; i++)
 	{
 		printVector(objData->vertexList[i]);
 		printf("\n");
 	}
+	printf("};\n");
 	printf("\n");
 
 	//print indices
-	printf("Indices: %i\n", objData->faceCount);
+	printf("int Indices[IndexCount / 3][3] = {");
+	printf("\n");
 	for(int i=0; i<objData->faceCount; i++)
 	{
 		obj_face *o = objData->faceList[i];
-		for(int j=0; j<3; j++)
-		{
-			printf( "%d", o->vertex_index[j] );
-			printf(", ");
-			//printVector(objData->vertexList[ o->vertex_index[j] ]);
-		}
+		printf("	{%d,", o->vertex_index[0] );
+		printf("%d,", o->vertex_index[1] );
+		printf("%d},", o->vertex_index[2] );
+		//printVector(objData->vertexList[ o->vertex_index[j] ]);	
 		printf("\n");
 	}
+	printf("};");
+	printf("\n");
+
+
+	myfile.close();
 
 	return 0;
 }
