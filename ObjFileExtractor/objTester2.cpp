@@ -7,57 +7,57 @@
 #include <fstream>
 using namespace std;
 
-void printVector(obj_vector *v)
+void printVector(FILE *out, obj_vector *v)
 {
-	printf("	REAL(%.2f), ", v->e[0] );
-	printf("REAL(%.2f), ", v->e[1] );
-	printf("REAL(%.2f),  ", v->e[2] );
+	fprintf(out, "	REAL(%.2f), ", v->e[0]/100 );
+	fprintf(out, "REAL(%.2f), ", v->e[1]/100 );
+	fprintf(out, "REAL(%.2f),  ", v->e[2]/100 );
 }
 
 int main(int argc, char **argv){
 
 
 	//used for writing to file
-	ofstream myfile;
-	myfile.open ("results.txt");
+	FILE *out;
+	out = fopen("milk_carton.h", "w");
 
 	objLoader *objData = new objLoader();
-	objData->load("cube.obj");
+	objData->load("milk_carton.obj");
 
 
-	//try printing with cout<<
-	printf("\n");
-	cout<<"const int VertexCount = "<<objData->vertexCount<<";"<<endl;
-	cout<<"const int IndexCount = "<<objData->faceCount<<" * 3;"<<endl;
-	printf("\n");
-	
-	printf("float Vertices[VertexCount * 3] = {\n");
-	//print vertices
+	//try ffprinting with cout<<
+	fprintf(out, "const int VertexCount = %i;", objData->vertexCount);
+	fprintf(out, "\n");	
+	fprintf(out, "const int IndexCount = %i * 3;", objData->faceCount);
+	fprintf(out, "\n");
+	fprintf(out, "\n");	
+	fprintf(out, "float Vertices[VertexCount * 3] = {\n");
+	//fprint vertices
 	for(int i=0; i<objData->vertexCount; i++)
 	{
-		printVector(objData->vertexList[i]);
-		printf("\n");
+		printVector(out, objData->vertexList[i]);
+		fprintf(out, "\n");
 	}
-	printf("};\n");
-	printf("\n");
+	fprintf(out, "};\n");
+	fprintf(out, "\n");
 
-	//print indices
-	printf("int Indices[IndexCount / 3][3] = {");
-	printf("\n");
+	//fprint indices
+	fprintf(out, "int Indices[IndexCount / 3][3] = {");
+	fprintf(out, "\n");
 	for(int i=0; i<objData->faceCount; i++)
 	{
 		obj_face *o = objData->faceList[i];
-		printf("	{%d,", o->vertex_index[0] );
-		printf("%d,", o->vertex_index[1] );
-		printf("%d},", o->vertex_index[2] );
+		fprintf(out, "	{%d,", o->vertex_index[0] );
+		fprintf(out, "%d,", o->vertex_index[1] );
+		fprintf(out, "%d},", o->vertex_index[2] );
 		//printVector(objData->vertexList[ o->vertex_index[j] ]);	
-		printf("\n");
+		fprintf(out, "\n");
 	}
-	printf("};");
-	printf("\n");
+	fprintf(out, "};");
+	fprintf(out, "\n");
 
 
-	myfile.close();
+	fclose(out);
 
 	return 0;
 }
