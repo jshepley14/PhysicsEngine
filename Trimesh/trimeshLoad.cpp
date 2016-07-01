@@ -15,9 +15,6 @@ using namespace std;
 
 
 
-
-
-
 #ifdef dDOUBLE
 #define dsDrawBox dsDrawBoxD
 #define dsDrawSphere dsDrawSphereD
@@ -31,12 +28,14 @@ using namespace std;
 typedef struct MyObject {
   dBodyID body;	       
   dGeomID geom;	
-  dReal   m; 
-  dReal   lx,ly,lz;
-  int indCount;
-  int vertCount;
-  vector< vector<int> > indexVec;
-  vector<float> dvertVec;
+  dReal   m;         //mass
+  dReal   lx,ly,lz;  //lengths
+  int indCount;      //number of triangles (indices)
+  int vertCount;     //number of vertices
+  vector< vector<int> > indexDrawVec;
+  vector<int> indexGeomVec;
+  vector<float> vertexDrawVec;
+  vector<float> vertexGeomVec;
 } MyObject;
 
 
@@ -58,11 +57,13 @@ static void nearCallback(void *data, dGeomID o1, dGeomID o2)
 
   dContact contact[MAX_CONTACTS];  
   for (int i=0; i<MAX_CONTACTS; i++) {
-    contact[i].surface.mode = dContactBounce | dContactSoftCFM | dContactSoftERP;
-    contact[i].surface.mu         = 1.0; 
-    contact[i].surface.bounce     = 0.1;
-    contact[i].surface.soft_cfm   = 0.0001;
-    contact[i].surface.soft_erp   = 0.95;
+    contact[i].surface.mode = dContactBounce | dContactSoftCFM;
+    contact[i].surface.mu         = dInfinity; //1.0?
+    contact[i].surface.mu2         = 0;
+    contact[i].surface.bounce     = 0;
+    contact[i].surface.bounce_vel = 0;
+    contact[i].surface.soft_cfm   = 0.01;
+    //contact[i].surface.soft_erp   = 0.95;
   }
   if (int numc = dCollide (o1,o2,MAX_CONTACTS,&contact[0].geom,
 			   sizeof(dContact))) {
@@ -94,46 +95,23 @@ void drawPlate()
 void drawBunny()
 {
   dsSetColor(1.1,1.1,0.0);
-
   for (int i = 0; i < bunny.indCount ; i++){
     const dReal v[9] = { 
-      bunny.dvertVec[bunny.indexVec[i][0] * 3 + 0],
-      bunny.dvertVec[bunny.indexVec[i][0] * 3 + 1],
-      bunny.dvertVec[bunny.indexVec[i][0] * 3 + 2],
-      bunny.dvertVec[bunny.indexVec[i][1] * 3 + 0],
-      bunny.dvertVec[bunny.indexVec[i][1] * 3 + 1],
-      bunny.dvertVec[bunny.indexVec[i][1] * 3 + 2],
-      bunny.dvertVec[bunny.indexVec[i][2] * 3 + 0],
-      bunny.dvertVec[bunny.indexVec[i][2] * 3 + 1],
-      bunny.dvertVec[bunny.indexVec[i][2] * 3 + 2]
+      bunny.vertexDrawVec[bunny.indexDrawVec[i][0] * 3 + 0],
+      bunny.vertexDrawVec[bunny.indexDrawVec[i][0] * 3 + 1],
+      bunny.vertexDrawVec[bunny.indexDrawVec[i][0] * 3 + 2],
+      bunny.vertexDrawVec[bunny.indexDrawVec[i][1] * 3 + 0],
+      bunny.vertexDrawVec[bunny.indexDrawVec[i][1] * 3 + 1],
+      bunny.vertexDrawVec[bunny.indexDrawVec[i][1] * 3 + 2],
+      bunny.vertexDrawVec[bunny.indexDrawVec[i][2] * 3 + 0],
+      bunny.vertexDrawVec[bunny.indexDrawVec[i][2] * 3 + 1],
+      bunny.vertexDrawVec[bunny.indexDrawVec[i][2] * 3 + 2]
      };   
      dsDrawTriangle(dGeomGetPosition(bunny.geom),
 	     dGeomGetRotation(bunny.geom), &v[0], &v[3], &v[6], 1);
   }
 }
 
-/*
-void drawBunny()
-{
-  dsSetColor(1.1,1.1,0.0);
-
-  for (int i = 0; i < IndexCount / 3; i++){
-    const dReal v[9] = { 
-      Vertices[Indices[i][0] * 3 + 0],
-      Vertices[Indices[i][0] * 3 + 1],
-      Vertices[Indices[i][0] * 3 + 2],
-      Vertices[Indices[i][1] * 3 + 0],
-      Vertices[Indices[i][1] * 3 + 1],
-      Vertices[Indices[i][1] * 3 + 2],
-      Vertices[Indices[i][2] * 3 + 0],
-      Vertices[Indices[i][2] * 3 + 1],
-      Vertices[Indices[i][2] * 3 + 2]
-     };   
-     dsDrawTriangle(dGeomGetPosition(bunny.geom),
-	     dGeomGetRotation(bunny.geom), &v[0], &v[3], &v[6], 1);
-  }
-}
-*/
 
 
 static void simLoop(int pause)
@@ -171,68 +149,68 @@ static void makePlate() {
 
 void makeBunny() 
 {
-  //load the file
+
+  //****************
+  //To Do:
+  //then try to load more complex .obj files
+  //try loading a .obj with a handle.
+  //*******************
+
+
+  //Load the file
   objLoader *objData = new objLoader();
 	objData->load("cube.obj");
+
+  //Get index and vertex count
   bunny.indCount = objData->faceCount;
   bunny.vertCount = objData->vertexCount;
 
-  //make 2D vector of indices for drawing 
+  //Make 2D vector of indices for drawing 
   int indexCount = bunny.indCount; 
 	for(int i=0; i<indexCount; i++)
 	{	vector<int> temp_vec;
 		temp_vec.push_back((objData->faceList[i])->vertex_index[0]);
 		temp_vec.push_back((objData->faceList[i])->vertex_index[1]);
 		temp_vec.push_back((objData->faceList[i])->vertex_index[2]);
-		bunny.indexVec.push_back(temp_vec);
+		bunny.indexDrawVec.push_back(temp_vec);
 	}
 
-  //make 1D vector of indices for geometry
-  static vector<int> dataVec;
+  //Make 1D vector of indices for geometry
   for(int i=0; i< indexCount; i++)
   {	
-    dataVec.push_back((objData->faceList[i])->vertex_index[0]);
-    dataVec.push_back((objData->faceList[i])->vertex_index[1]);
-    dataVec.push_back((objData->faceList[i])->vertex_index[2]);   
+    bunny.indexGeomVec.push_back((objData->faceList[i])->vertex_index[0]);
+    bunny.indexGeomVec.push_back((objData->faceList[i])->vertex_index[1]);
+    bunny.indexGeomVec.push_back((objData->faceList[i])->vertex_index[2]);   
   }
 
-  //make 1D vector of vertices for drawing
+  //Make 1D vector of vertices for drawing
   int SCALE =100;
   int vertCount =  bunny.vertCount;
 	for(int i=0; i< vertCount ; i++){
-		bunny.dvertVec.push_back( objData->vertexList[i]->e[0]/SCALE);
-		bunny.dvertVec.push_back( objData->vertexList[i]->e[1]/SCALE);
-		bunny.dvertVec.push_back( objData->vertexList[i]->e[2]/SCALE);	
+		bunny.vertexDrawVec.push_back( objData->vertexList[i]->e[0]/SCALE);
+		bunny.vertexDrawVec.push_back( objData->vertexList[i]->e[1]/SCALE);
+		bunny.vertexDrawVec.push_back( objData->vertexList[i]->e[2]/SCALE);	
 	}
-
-  //make 1D vector of vertices for geometry
-	static vector<float> vertVec;
-	for(int i=0; i< vertCount ; i++){
-		vertVec.push_back( objData->vertexList[i]->e[0]/SCALE);
-		vertVec.push_back( objData->vertexList[i]->e[1]/SCALE);
-		vertVec.push_back( objData->vertexList[i]->e[2]/SCALE);	
-	}
-
-//change to double??
-
-  dReal x0 = 0, y0 = 0, z0 = 2.5;
-	bunny.m  = 10.0;
-	bunny.lx = 2.0; bunny.ly = 0.5; bunny.lz = 1.0;
   
-  //trimesh stuff
+  //Make 1D vector of vertices for geometry
+  for(int i=0; i< vertCount ; i++){
+		bunny.vertexGeomVec.push_back( objData->vertexList[i]->e[0]/SCALE);
+		bunny.vertexGeomVec.push_back( objData->vertexList[i]->e[1]/SCALE);
+		bunny.vertexGeomVec.push_back( objData->vertexList[i]->e[2]/SCALE);	
+	}
+
+  //Build trimesh
   TriData = dGeomTriMeshDataCreate();
-  dGeomTriMeshDataBuildSingle(TriData, vertVec.data(), 3 * sizeof(float), 
-	     bunny.vertCount, (int*)dataVec.data(), indexCount*3, 3 * sizeof(int));
+  dGeomTriMeshDataBuildSingle(TriData, bunny.vertexGeomVec.data(), 3 * sizeof(float), 
+	     bunny.vertCount, (int*)bunny.indexGeomVec.data(), indexCount*3, 3 * sizeof(int));
  
- //(int*)Indices
-
-
+  //Length, Position, Mass, Rotation
+  dReal x0 = 0, y0 = 5, z0 = 1;
+	bunny.m  = .10;
+	bunny.lx = 0; bunny.ly = 5; bunny.lz = 1.0;
   bunny.body = dBodyCreate(world);
   bunny.geom = dCreateTriMesh(space, TriData, 0, 0, 0);
   dGeomSetBody(bunny.geom, bunny.body);
-  
-
-
   dMass mass;
   dMassSetBoxTotal(&mass, bunny.m, bunny.lx, bunny.ly, bunny.lz);
   dBodySetMass(bunny.body, &mass);
@@ -241,7 +219,8 @@ void makeBunny()
   dRFromAxisAndAngle(Rotation, 1, 1, 0, M_PI / 2);
   dBodySetRotation(bunny.body, Rotation);
 }
-
+//To do:
+//change above ^ to that in the heightfield program
 
 
 void setDrawStuff()
