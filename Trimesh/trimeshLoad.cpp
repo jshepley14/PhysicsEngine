@@ -1,7 +1,7 @@
 // bunny.cpp 
 #include <ode/ode.h>
 #include <drawstuff/drawstuff.h>
-#include "cube.h"
+//#include "cube.h"
 
 
 //used for loading file
@@ -36,6 +36,7 @@ typedef struct MyObject {
   int indCount;
   int vertCount;
   vector< vector<int> > indexVec;
+  vector<float> dvertVec;
 } MyObject;
 
 
@@ -96,15 +97,15 @@ void drawBunny()
 
   for (int i = 0; i < bunny.indCount ; i++){
     const dReal v[9] = { 
-      Vertices[bunny.indexVec[i][0] * 3 + 0],
-      Vertices[bunny.indexVec[i][0] * 3 + 1],
-      Vertices[bunny.indexVec[i][0] * 3 + 2],
-      Vertices[bunny.indexVec[i][1] * 3 + 0],
-      Vertices[bunny.indexVec[i][1] * 3 + 1],
-      Vertices[bunny.indexVec[i][1] * 3 + 2],
-      Vertices[bunny.indexVec[i][2] * 3 + 0],
-      Vertices[bunny.indexVec[i][2] * 3 + 1],
-      Vertices[bunny.indexVec[i][2] * 3 + 2]
+      bunny.dvertVec[bunny.indexVec[i][0] * 3 + 0],
+      bunny.dvertVec[bunny.indexVec[i][0] * 3 + 1],
+      bunny.dvertVec[bunny.indexVec[i][0] * 3 + 2],
+      bunny.dvertVec[bunny.indexVec[i][1] * 3 + 0],
+      bunny.dvertVec[bunny.indexVec[i][1] * 3 + 1],
+      bunny.dvertVec[bunny.indexVec[i][1] * 3 + 2],
+      bunny.dvertVec[bunny.indexVec[i][2] * 3 + 0],
+      bunny.dvertVec[bunny.indexVec[i][2] * 3 + 1],
+      bunny.dvertVec[bunny.indexVec[i][2] * 3 + 2]
      };   
      dsDrawTriangle(dGeomGetPosition(bunny.geom),
 	     dGeomGetRotation(bunny.geom), &v[0], &v[3], &v[6], 1);
@@ -148,7 +149,7 @@ static void simLoop(int pause)
 
 static void makePlate() {
   dMass mass;
-  dReal x0 = 0.0, y0 = 5.0, z0 = 0.5;
+  dReal x0 = 0.0, y0 = 0.0, z0 = 0.5;
 
   plate.lx = 2.0;  plate.ly   =  2.0;
   plate.lz = 0.01; plate.m    = 10.0;
@@ -176,8 +177,8 @@ void makeBunny()
   bunny.indCount = objData->faceCount;
   bunny.vertCount = objData->vertexCount;
 
-  //make vector of indices
-  int indexCount = bunny.indCount;
+  //make 2D vector of indices for drawing 
+  int indexCount = bunny.indCount; 
 	for(int i=0; i<indexCount; i++)
 	{	vector<int> temp_vec;
 		temp_vec.push_back((objData->faceList[i])->vertex_index[0]);
@@ -186,69 +187,31 @@ void makeBunny()
 		bunny.indexVec.push_back(temp_vec);
 	}
 
-  printf("\n");
-  printf("\n");
-  printf("VECTOR\n");
-  for(int i=0; i<indexCount; i++)
-	{		
-		printf("%i,",bunny.indexVec[i][0]);
-		printf("%i,",bunny.indexVec[i][1]);
-		printf("%i\n",bunny.indexVec[i][2]);
+  //make 1D vector of indices for geometry
+  static vector<int> dataVec;
+  for(int i=0; i< indexCount; i++)
+  {	
+    dataVec.push_back((objData->faceList[i])->vertex_index[0]);
+    dataVec.push_back((objData->faceList[i])->vertex_index[1]);
+    dataVec.push_back((objData->faceList[i])->vertex_index[2]);   
+  }
+
+  //make 1D vector of vertices for drawing
+  int SCALE =100;
+  int vertCount =  bunny.vertCount;
+	for(int i=0; i< vertCount ; i++){
+		bunny.dvertVec.push_back( objData->vertexList[i]->e[0]/SCALE);
+		bunny.dvertVec.push_back( objData->vertexList[i]->e[1]/SCALE);
+		bunny.dvertVec.push_back( objData->vertexList[i]->e[2]/SCALE);	
 	}
 
-
-  //make double array to pass into TriMeshBuilder
-  int Indices1[indexCount][3];  ///make static
-	for(int i=0; i<indexCount; i++)
-	{
-		Indices1[i][0]=bunny.indexVec[i][0];
-		Indices1[i][1]=bunny.indexVec[i][1];
-		Indices1[i][2]=bunny.indexVec[i][2];
+  //make 1D vector of vertices for geometry
+	static vector<float> vertVec;
+	for(int i=0; i< vertCount ; i++){
+		vertVec.push_back( objData->vertexList[i]->e[0]/SCALE);
+		vertVec.push_back( objData->vertexList[i]->e[1]/SCALE);
+		vertVec.push_back( objData->vertexList[i]->e[2]/SCALE);	
 	}
-
-  printf("\n");
-  printf("\n");
-
-  printf("New Indices\n");
-  for(int i=0; i<indexCount; i++)
-	{
-		printf("%i,",Indices1[i][0]);
-		printf("%i,",Indices1[i][1]);
-		printf("%i\n",Indices1[i][2]);
-	}
-
-  printf("Old Indices from .h file\n");
-  for(int i=0; i<indexCount; i++)
-	{
-		printf("%i,",Indices[i][0]);
-		printf("%i,",Indices[i][1]);
-		printf("%i\n",Indices[i][2]);
-	}
- 
-
- int Indices2[12][3] = {
-	{0,1,2},
-	{1,0,3},
-	{4,1,3},
-	{1,4,5},
-	{0,4,3},
-	{4,0,6},
-	{4,7,5},
-	{7,4,6},
-	{7,1,5},
-	{1,7,2},
-	{7,0,2},
-	{0,7,6}
-};
-
-static vector<int> dataVec;
-for(int i=0; i< indexCount; i++)
-{	
-  dataVec.push_back((objData->faceList[i])->vertex_index[0]);
-  dataVec.push_back((objData->faceList[i])->vertex_index[1]);
-  dataVec.push_back((objData->faceList[i])->vertex_index[2]);
-   
-}
 
 //change to double??
 
@@ -258,7 +221,7 @@ for(int i=0; i< indexCount; i++)
   
   //trimesh stuff
   TriData = dGeomTriMeshDataCreate();
-  dGeomTriMeshDataBuildSingle(TriData, Vertices, 3 * sizeof(float), 
+  dGeomTriMeshDataBuildSingle(TriData, vertVec.data(), 3 * sizeof(float), 
 	     bunny.vertCount, (int*)dataVec.data(), indexCount*3, 3 * sizeof(int));
  
  //(int*)Indices
