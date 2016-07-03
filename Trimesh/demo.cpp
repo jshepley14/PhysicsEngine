@@ -54,6 +54,13 @@
 
 using namespace std;
 
+
+//***********SOME POSITION CONSTANTS**************
+const dReal center1[3] = {0,0,6}; // length of edges
+
+//***********************************************
+
+
 // dynamics and collision objects
 
 struct MyObject {
@@ -64,7 +71,8 @@ struct MyObject {
   dReal matrix_dblbuff[ 16 * 2 ];
   int last_matrix_index;
 
-  int IDnumber;
+  int IDnumber;             //the number of the object
+  dReal center[3];    //the center x,y,z coordinates
 
 
 };
@@ -152,14 +160,39 @@ static void start()
 
 
 //To Do
-void createObject (MyObject &object, int number){
+void createObject (MyObject &object, int number, const dReal* center){
+  int i,j,k;
+  dMass m;
   object.IDnumber = number; 
+  object.center[0] = center[0];
+  object.center[1] = center[1];
+  object.center[2] = center[2];
   
-  /*load object data function needs to take in filename
-  // input some various different coordinates
-  // have one key "m" create mesh with certain coordinates
-  // have another key create with differe objects
-  // need to add the actualy geometry and body creation
+  object.body = dBodyCreate (world);
+  dMatrix3 R;
+    //set your own positions
+  dBodySetPosition (object.body, center1[0], center1[1], center1[2]);
+  dRFromAxisAndAngle (R,0,0,1,dRandReal()*10.0-5.0);
+  dBodySetRotation (object.body,R);
+  dBodySetData (object.body,(void*)(size_t)i);
+
+  dTriMeshDataID new_tmdata = dGeomTriMeshDataCreate();
+  dGeomTriMeshDataBuildSingle(new_tmdata, &Vertices[0], 3 * sizeof(float), VertexCount, 
+                              (dTriIndex*)&Indices[0], IndexCount, 3 * sizeof(dTriIndex));
+  object.geom[0] = dCreateTriMesh(space, new_tmdata, 0, 0, 0);
+  // remember the mesh's dTriMeshDataID on its userdata for convenience.
+  dGeomSetData(object.geom[0], new_tmdata);        
+  dMassSetTrimesh( &m, DENSITY, object.geom[0] );
+  printf("mass at %f %f %f\n", m.c[0], m.c[1], m.c[2]);
+  dGeomSetPosition(object.geom[0], m.c[0], m.c[1], m.c[2]);
+  dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]);
+
+  for (k=0; k < GPB; k++){
+      if (object.geom[k]){
+          dGeomSetBody(object.geom[k],object.body);
+      }
+  }
+  dBodySetMass(object.body,&m);
 
 }
 
@@ -186,6 +219,49 @@ static void command (int cmd)
     bool setBody = false;
 
     cmd = locase (cmd);
+    
+
+
+    //my own command 
+    if (cmd == 'j'){
+
+        //add a new object
+        i = num;
+        num++;
+        createObject(obj[i], i, center1);
+
+      /* this may be useful code for later
+        if (num < NUM) {
+            i = num;
+            num++;
+        }
+        else {
+            i = nextobj;
+            nextobj++;
+            if (nextobj >= num) nextobj = 0;
+
+            // destroy the body and geoms for slot i
+            dBodyDestroy (obj[i].body);
+            for (k=0; k < GPB; k++) {
+                if (obj[i].geom[k]) dGeomDestroy (obj[i].geom[k]);
+            }
+            memset (&obj[i],0,sizeof(obj[i]));
+        }
+        */
+  
+        //testing out my createObject functions
+
+    }
+
+
+
+
+
+
+
+
+
+
     if (cmd == 'b' || cmd == 's' || cmd == 'c' || cmd == 'x' || cmd == 'm' || cmd == 'y' ) {
         if (num < NUM) {
             i = num;
@@ -205,8 +281,7 @@ static void command (int cmd)
         }
 
 
-        //testing out my createObject functions
-        createObject(obj[i], i);
+        
 
 
         obj[i].body = dBodyCreate (world);
@@ -262,6 +337,10 @@ static void command (int cmd)
 
         //Ayyyyyyy LMAO
         else if (cmd == 'm') {
+             //testing out my createObject functions
+             createObject(obj[i], i, center1);
+
+
             dTriMeshDataID new_tmdata = dGeomTriMeshDataCreate();
             dGeomTriMeshDataBuildSingle(new_tmdata, &Vertices[0], 3 * sizeof(float), VertexCount, 
                                         (dTriIndex*)&Indices[0], IndexCount, 3 * sizeof(dTriIndex));
@@ -276,6 +355,7 @@ static void command (int cmd)
             dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]);
             
             cout<<obj[i].IDnumber;
+            cout<<obj[i].center[2];
 
             /*
              // remember the mesh's dTriMeshDataID on its userdata for convenience.
