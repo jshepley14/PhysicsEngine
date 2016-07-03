@@ -23,7 +23,8 @@ using namespace std;
 #define dsDrawTriangle dsDrawTriangleD
 #endif
 
-#define MAX_CONTACTS 32 
+#define DENSITY (50.0)		// density of all objects
+#define MAX_CONTACTS 4// 32 //change to 64?  // maximum number of contact points per body
 
 typedef struct MyObject {
   dBodyID body;	       
@@ -36,6 +37,7 @@ typedef struct MyObject {
   vector<int> indexGeomVec;
   vector<float> vertexDrawVec;
   vector<float> vertexGeomVec;
+  vector<float> centerOfMass;
 } MyObject;
 
 
@@ -127,7 +129,7 @@ static void simLoop(int pause)
 
 static void makePlate() {
   dMass mass;
-  dReal x0 = 0.0, y0 = 0.0, z0 = 0.5;
+  dReal x0 = -5.0, y0 = 0.0, z0 = 0.5;
 
   plate.lx = 2.0;  plate.ly   =  2.0;
   plate.lz = 0.01; plate.m    = 10.0;
@@ -150,20 +152,17 @@ static void makePlate() {
 void makeBunny() 
 {
 
-  //****************
-  //To Do:
-  //then try to load more complex .obj files
-  //try loading a .obj with a handle.
-  //*******************
-
 
   //Load the file
   objLoader *objData = new objLoader();
-	objData->load("cube.obj");
+	objData->load("milk_carton.obj");
 
   //Get index and vertex count
   bunny.indCount = objData->faceCount;
   bunny.vertCount = objData->vertexCount;
+
+  //get the centerOfMass
+  bunny.centerOfMass = {0,0,1};
 
   //Make 2D vector of indices for drawing 
   int indexCount = bunny.indCount; 
@@ -194,9 +193,9 @@ void makeBunny()
   
   //Make 1D vector of vertices for geometry
   for(int i=0; i< vertCount ; i++){
-		bunny.vertexGeomVec.push_back( objData->vertexList[i]->e[0]/SCALE);
-		bunny.vertexGeomVec.push_back( objData->vertexList[i]->e[1]/SCALE);
-		bunny.vertexGeomVec.push_back( objData->vertexList[i]->e[2]/SCALE);	
+		bunny.vertexGeomVec.push_back( objData->vertexList[i]->e[0]/SCALE -bunny.centerOfMass[0]);
+		bunny.vertexGeomVec.push_back( objData->vertexList[i]->e[1]/SCALE -bunny.centerOfMass[1]);
+		bunny.vertexGeomVec.push_back( objData->vertexList[i]->e[2]/SCALE -bunny.centerOfMass[2]);	
 	}
 
   //Build trimesh
@@ -204,6 +203,26 @@ void makeBunny()
   dGeomTriMeshDataBuildSingle(TriData, bunny.vertexGeomVec.data(), 3 * sizeof(float), 
 	     bunny.vertCount, (int*)bunny.indexGeomVec.data(), indexCount*3, 3 * sizeof(int));
  
+
+
+  //experimenting
+  dReal x = 0, y = 0, z = 0;
+  dReal mx = 0, my = 0, mz = 1;
+  bunny.body = dBodyCreate(world);
+  dBodySetPosition(bunny.body, mx, my, mz);
+  dMatrix3 Rotation;
+  dRFromAxisAndAngle(Rotation, 1, 1, 0, M_PI / 2);
+  dBodySetRotation(bunny.body, Rotation);
+  dMass mass;
+  bunny.geom = dCreateTriMesh(space, TriData, 0, 0, 0);
+  dGeomSetBody(bunny.geom, bunny.body);
+  dMassSetTrimesh( &mass, DENSITY, bunny.geom );
+  //dBodySetMass(bunny.body, &mass);
+  dGeomSetPosition(bunny.geom, mx, my, mz);
+  dMassTranslate(&mass, mx, my, mz);
+
+
+ /*
   //Length, Position, Mass, Rotation
   dReal x0 = 0, y0 = 5, z0 = 1;
 	bunny.m  = .10;
@@ -218,9 +237,10 @@ void makeBunny()
   dMatrix3 Rotation;
   dRFromAxisAndAngle(Rotation, 1, 1, 0, M_PI / 2);
   dBodySetRotation(bunny.body, Rotation);
+ */
+
+
 }
-//To do:
-//change above ^ to that in the heightfield program
 
 
 void setDrawStuff()
@@ -241,7 +261,7 @@ int main(int argc, char **argv)
   space = dHashSpaceCreate(0);
   contactgroup = dJointGroupCreate(0);
   ground = dCreatePlane(space,0,0,1,0);
-  dWorldSetGravity(world,0,0,-9.8);
+  dWorldSetGravity(world,0,0,-9.8); 
   dWorldSetERP(world, 1.0);
   dWorldSetCFM(world, 1e-4);
   
