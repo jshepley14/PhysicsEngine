@@ -1,24 +1,14 @@
-/*************************************************************************
- *                                                                       *
- * Open Dynamics Engine, Copyright (C) 2001-2003 Russell L. Smith.       *
- * All rights reserved.  Email: russ@q12.org   Web: www.q12.org          *
- *                                                                       *
- * This library is free software; you can redistribute it and/or         *
- * modify it under the terms of EITHER:                                  *
- *   (1) The GNU Lesser General Public License as published by the Free  *
- *       Software Foundation; either version 2.1 of the License, or (at  *
- *       your option) any later version. The text of the GNU Lesser      *
- *       General Public License is included with this library in the     *
- *       file LICENSE.TXT.                                               *
- *   (2) The BSD-style license that is included with this library in     *
- *       the file LICENSE-BSD.TXT.                                       *
- *                                                                       *
- * This library is distributed in the hope that it will be useful,       *
- * but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the files    *
- * LICENSE.TXT and LICENSE-BSD.TXT for more details.                     *
- *                                                                       *
- *************************************************************************/
+//Joe Shepley CMY 2016
+//Static Equilibrium tester in ODE physics engine
+/****************************************************
+//                   To Do
+//
+//comment out/ delete unneccesarly code?
+//try to understand more what's happening with num and i
+//think critically about using an array.whatevr instead of bunny.whatver
+//instead of pressing 'j', just call the createObject function
+//work on loading in the .obj file data
+/**********************************************/
 
 #include <ode/ode.h>
 #include <drawstuff/drawstuff.h>
@@ -34,7 +24,6 @@
 #endif
 
 // select correct drawing functions
-
 #ifdef dDOUBLE
 #define dsDrawBox dsDrawBoxD
 #define dsDrawSphere dsDrawSphereD
@@ -46,7 +35,6 @@
 
 
 // some constants
-
 #define NUM 200			// max number of objects
 #define DENSITY (5.0)		// density of all objects
 #define GPB 3			// maximum number of geometries per body
@@ -75,8 +63,6 @@ struct MyObject {
   dReal center[3];    //the center x,y,z coordinates
   //rotation
   //color
-
-
 };
 
 static int num=0;		// number of objects in simulation
@@ -92,13 +78,10 @@ static int random_pos = 1;	// drop objects from random position?
 
 typedef dReal dVector3R[3];
 
-dGeomID TriMesh1;
-dGeomID TriMesh2;
-static dTriMeshDataID TriData1, TriData2;  // reusable static trimesh data
+
 
 // this is called by dSpaceCollide when two objects in space are
 // potentially colliding.
-
 static void nearCallback (void *, dGeomID o1, dGeomID o2)
 {
   int i;
@@ -133,31 +116,15 @@ static void nearCallback (void *, dGeomID o1, dGeomID o2)
 
 
 // start simulation - set viewpoint
-
 static void start()
 {
   dAllocateODEDataForThread(dAllocateMaskAll);
-
   //static float xyz[3] = {2.1640f,-1.3079f,1.7600f};
   //static float hpr[3] = {125.5000f,-17.0000f,0.0000f};
-
   static float xyz[3]={-0.0559,-8.2456,6.0500};
   static float hpr[3]= { 89.0000,-25.0000,0.0000};
-
   dsSetViewpoint (xyz,hpr);
-  printf ("To drop another object, press:\n");
-  printf ("   b for box.\n");
-  printf ("   s for sphere.\n");
-  printf ("   y for cylinder.\n");
-  printf ("   c for capsule.\n");
-  printf ("   x for a composite object.\n");
-  printf ("   m for a trimesh.\n");
-  printf ("To select an object, press space.\n");
-  printf ("To disable the selected object, press d.\n");
-  printf ("To enable the selected object, press e.\n");
-  printf ("To toggle showing the geom AABBs, press a.\n");
-  printf ("To toggle showing the contact points, press t.\n");
-  printf ("To toggle dropping from random position/orientation, press r.\n");
+  printf ("To drop another object, press j:\n");
 }
 
 
@@ -189,6 +156,7 @@ void createObject (MyObject &object, int number, const dReal* center){
   dGeomSetPosition(object.geom[0], m.c[0], m.c[1], m.c[2]);
   dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]);
 
+  //set body loop
   for (k=0; k < GPB; k++){
       if (object.geom[k]){
           dGeomSetBody(object.geom[k],object.body);
@@ -200,45 +168,21 @@ void createObject (MyObject &object, int number, const dReal* center){
 
 
 
-
-
-
-
-char locase (char c)
-{
-  if (c >= 'A' && c <= 'Z') return c - ('a'-'A');
-  else return c;
-}
-
-
 // called when a key pressed
-
 static void command (int cmd)
 {
-    int i,j,k;
-    dReal sides[3];
-    dMass m;
-    bool setBody = false;
-
-    cmd = locase (cmd);
-    
-
-//To Do
-//comment out/ delete unneccesarly code?
-//try to understand more what's happening with num and i
-//think critically about using an array.whatevr instead of bunny.whatver
-//instead of pressing 'j', just call the createObject function
-//work on loading in the .obj file data
-
-
-    //my own command 
+    int i;
     if (cmd == 'j'){
-
         //add a new object
         i = num;
         num++;
         createObject(obj[i], i, center1);
+    }
+}
 
+
+//destroys an object/ objects?
+void destroyObject(){
       /* this may be useful code for later
         if (num < NUM) {
             i = num;
@@ -256,227 +200,9 @@ static void command (int cmd)
             }
             memset (&obj[i],0,sizeof(obj[i]));
         }
-        */
-  
-        //testing out my createObject functions
+        */ 
+}  
 
-    }
-
-
-
-
-
-
-
-
-
-    //might want to keep this because might want to mix primitives with trimeshes
-    if (cmd == 'b' || cmd == 's' || cmd == 'c' || cmd == 'x' || cmd == 'm' || cmd == 'y' ) {
-        if (num < NUM) {
-            i = num;
-            num++;
-        }
-        else {
-            i = nextobj;
-            nextobj++;
-            if (nextobj >= num) nextobj = 0;
-
-            // destroy the body and geoms for slot i
-            dBodyDestroy (obj[i].body);
-            for (k=0; k < GPB; k++) {
-                if (obj[i].geom[k]) dGeomDestroy (obj[i].geom[k]);
-            }
-            memset (&obj[i],0,sizeof(obj[i]));
-        }
-
-
-        
-
-
-        obj[i].body = dBodyCreate (world);
-        for (k=0; k<3; k++) sides[k] = dRandReal()*0.5+0.1;
-
-        dMatrix3 R;
-
-        //set random positions
-        if (random_pos) {
-            dBodySetPosition (obj[i].body,
-                              dRandReal()*2-1,dRandReal()*2-1,dRandReal()+3);
-            dRFromAxisAndAngle (R,dRandReal()*2.0-1.0,dRandReal()*2.0-1.0,
-                                dRandReal()*2.0-1.0,dRandReal()*10.0-5.0);
-        }
-        else {  //set your own positions
-            dReal maxheight = 0;
-            for (k=0; k<num; k++) {
-                const dReal *pos = dBodyGetPosition (obj[k].body);
-                if (pos[2] > maxheight) maxheight = pos[2];
-            }
-            dBodySetPosition (obj[i].body, 1,0,maxheight+4);
-            dRFromAxisAndAngle (R,0,0,1,dRandReal()*10.0-5.0);
-        }
-        dBodySetRotation (obj[i].body,R);
-        dBodySetData (obj[i].body,(void*)(size_t)i);
-
-
-//*************DONT NEED*********************************************
-        if (cmd == 'b') {
-            dMassSetBox (&m,DENSITY,sides[0],sides[1],sides[2]);
-            obj[i].geom[0] = dCreateBox (space,sides[0],sides[1],sides[2]);
-        }
-        else if (cmd == 'c') {
-            sides[0] *= 0.5;
-            dMassSetCapsule (&m,DENSITY,3,sides[0],sides[1]);
-            obj[i].geom[0] = dCreateCapsule (space,sides[0],sides[1]);
-        }
-        else if (cmd == 'y') {
-            sides[1] *= 0.5;
-            dMassSetCylinder (&m,DENSITY,3,sides[0],sides[1]);
-            obj[i].geom[0] = dCreateCylinder (space,sides[0],sides[1]);
-        }
-	      else if (cmd == 's') {
-            sides[0] *= 0.5;
-            dMassSetSphere (&m,DENSITY,sides[0]);
-            obj[i].geom[0] = dCreateSphere (space,sides[0]);
-        }
-//^^^^^^^^^^^^^^^^^DONT NEED^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
-
-
-        //Ayyyyyyy LMAO
-        else if (cmd == 'm') {
-             //testing out my createObject functions
-             createObject(obj[i], i, center1);
-
-
-            dTriMeshDataID new_tmdata = dGeomTriMeshDataCreate();
-            dGeomTriMeshDataBuildSingle(new_tmdata, &Vertices[0], 3 * sizeof(float), VertexCount, 
-                                        (dTriIndex*)&Indices[0], IndexCount, 3 * sizeof(dTriIndex));
-
-            obj[i].geom[0] = dCreateTriMesh(space, new_tmdata, 0, 0, 0);
-
-            // remember the mesh's dTriMeshDataID on its userdata for convenience.
-            dGeomSetData(obj[i].geom[0], new_tmdata);        
-            dMassSetTrimesh( &m, DENSITY, obj[i].geom[0] );
-            printf("mass at %f %f %f\n", m.c[0], m.c[1], m.c[2]);
-            dGeomSetPosition(obj[i].geom[0], m.c[0], m.c[1], m.c[2]);
-            dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]);
-            
-            cout<<obj[i].IDnumber;
-            cout<<obj[i].center[2];
-
-            /*
-             // remember the mesh's dTriMeshDataID on its userdata for convenience.
-            dGeomSetData(obj[i].geom[0], new_tmdata);        
-            dMassSetTrimesh( &m, DENSITY, obj[i].geom[0] );
-            dGeomSetBody(obj[i].geom[0], obj[i].body);
-            printf("mass at %f %f %f\n", m.c[0], m.c[1], m.c[2]);
-            dGeomSetOffsetPosition(obj[i].geom[0], m.c[0], m.c[1], m.c[2]);
-            dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]);
-            dBodySetMass(obj[i].body,&m);
-            */
-
-        }
-
-
-
-
-
-//************DONT NEED***********************************************
-        else if (cmd == 'x') {
-
-            setBody = true;
-            // start accumulating masses for the composite geometries
-            dMass m2;
-            dMassSetZero (&m);
-
-            dReal dpos[GPB][3];	// delta-positions for composite geometries
-            dMatrix3 drot[GPB];
-      
-            // set random delta positions
-            for (j=0; j<GPB; j++)
-                for (k=0; k<3; k++)
-                    dpos[j][k] = dRandReal()*0.3-0.15;
-    
-            for (k=0; k<GPB; k++) {
-                if (k==0) {
-                    dReal radius = dRandReal()*0.25+0.05;
-                    obj[i].geom[k] = dCreateSphere (space,radius);
-                    dMassSetSphere (&m2,DENSITY,radius);
-                } else if (k==1) {
-                    obj[i].geom[k] = dCreateBox(space,sides[0],sides[1],sides[2]);
-                    dMassSetBox(&m2,DENSITY,sides[0],sides[1],sides[2]);
-                } else {
-                    dReal radius = dRandReal()*0.1+0.05;
-                    dReal length = dRandReal()*1.0+0.1;
-                    obj[i].geom[k] = dCreateCapsule(space,radius,length);
-                    dMassSetCapsule(&m2,DENSITY,3,radius,length);
-                }
-
-                dRFromAxisAndAngle(drot[k],dRandReal()*2.0-1.0,dRandReal()*2.0-1.0,
-                                   dRandReal()*2.0-1.0,dRandReal()*10.0-5.0);
-                dMassRotate(&m2,drot[k]);
-		
-                dMassTranslate(&m2,dpos[k][0],dpos[k][1],dpos[k][2]);
-
-                // add to the total mass
-                dMassAdd(&m,&m2);
-
-            }
-            for (k=0; k<GPB; k++) {
-                dGeomSetBody(obj[i].geom[k],obj[i].body);
-                dGeomSetOffsetPosition(obj[i].geom[k],
-                                       dpos[k][0]-m.c[0],
-                                       dpos[k][1]-m.c[1],
-                                       dpos[k][2]-m.c[2]);
-                dGeomSetOffsetRotation(obj[i].geom[k], drot[k]);
-            }
-            dMassTranslate(&m,-m.c[0],-m.c[1],-m.c[2]);
-            dBodySetMass(obj[i].body,&m);
-
-        }
-//^^^^^^^^^^^^^^^^^DONT NEED^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
-
-        //Idk what this does...
-        if (!setBody) { // avoid calling for composite geometries
-            for (k=0; k < GPB; k++)
-                if (obj[i].geom[k])
-                    dGeomSetBody(obj[i].geom[k],obj[i].body);
-
-            dBodySetMass(obj[i].body,&m);
-        }
-    }
-
-
-//*************JUST EXTRA*********************************************
-    if (cmd == ' ') {
-        selected++;
-        if (selected >= num) selected = 0;
-        if (selected < 0) selected = 0;
-    }
-    else if (cmd == 'd' && selected >= 0 && selected < num) {
-        dBodyDisable (obj[selected].body);
-    }
-    else if (cmd == 'e' && selected >= 0 && selected < num) {
-        dBodyEnable (obj[selected].body);
-    }
-    else if (cmd == 'a') {
-        show_aabb ^= 1;
-    }
-    else if (cmd == 't') {
-        show_contacts ^= 1;
-    }
-    else if (cmd == 'r') {
-        random_pos ^= 1;
-    }
-//^^^^^^^^^^^^^^^^^JUST EXTRA^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-}
 
 
 //*************DONT NEED***********************************************
@@ -542,14 +268,13 @@ void setCurrentTransform(dGeomID geom)
    Rot[2], Rot[6], Rot[10], 0,
    Pos[0], Pos[1], Pos[2],  1
  };
-
  dGeomTriMeshSetLastTransform( geom, *(dMatrix4*)(&Transform) );
-
 }
 
 
-// simulation loop
 
+
+// simulation loop
 static void simLoop (int pause)
 {
   dsSetColor (0,0,2);
@@ -568,7 +293,6 @@ static void simLoop (int pause)
   }
 #endif
 
-  //if (!pause) dWorldStep (world,0.05);
   if (!pause) dWorldQuickStep (world,0.05);
 
   for (int j = 0; j < dSpaceGetNumGeoms(space); j++){
@@ -596,7 +320,6 @@ static void simLoop (int pause)
         if (dGeomGetClass(obj[i].geom[j]) == dTriMeshClass) {
           dTriIndex* Indices = (dTriIndex*)::Indices;
 
-          // assume all trimeshes are drawn as bunnies
           const dReal* Pos = dGeomGetPosition(obj[i].geom[j]);
           const dReal* Rot = dGeomGetRotation(obj[i].geom[j]);
         
