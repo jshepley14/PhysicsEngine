@@ -14,9 +14,11 @@
 #include <drawstuff/drawstuff.h>
 #include <string.h>
 #include <iostream>
-#include "texturepath.h"
-//#include "bunny_geom.h"
-#include "milk_carton2.h"
+#include <fstream>
+#include <vector>
+#include <stdio.h>
+#include "objLoader.h"
+
 
 
 #ifdef _MSC_VER
@@ -61,8 +63,23 @@ struct MyObject {
 
   int IDnumber;             //the number of the object
   dReal center[3];    //the center x,y,z coordinates
-  //rotation
-  //color
+  //ADD rotation
+  //ADD color?
+  int indCount;      //number of triangles (indices)
+  int vertCount;     //number of vertices
+  vector< vector<int> > indexDrawVec;
+  vector<int> indexGeomVec;
+  vector<float> vertexDrawVec;
+  vector<float> vertexGeomVec;
+  vector<float> centerOfMass;
+};
+
+class data // This if for center of mass calculations
+{
+public:
+    float x1,y1,z1;
+    float x2,y2,z2;
+    float x3,y3,z3;
 };
 
 static int num=0;		// number of objects in simulation
@@ -128,8 +145,105 @@ static void start()
 }
 
 
+
+ 
+
+
+
 //To Do
 void createObject (MyObject &object, int number, const dReal* center){
+  int SCALE =100;
+
+  //Load the file
+  objLoader *objData = new objLoader();
+	objData->load("milk_carton.obj");
+
+  //Get index and vertex count
+  object.indCount = objData->faceCount;
+  object.vertCount = objData->vertexCount;
+
+  //get the center of mass
+  int numTriangles = objData->faceCount; 
+	data triangles[numTriangles];
+	// fill the triangles array with the data in the STL file
+	for (int i =0; i < numTriangles; i ++){
+		obj_face *o = objData->faceList[i];
+		//cout<<o->vertex_index[0]<<"," <<o->vertex_index[1]<<","<< o->vertex_index[2] <<endl;
+		triangles[i].x1=objData->vertexList[ o->vertex_index[0] ]->e[0] ;  //(int)(objData->vertexList[ o->vertex_index[0] ]->e[0]/ROUNDSCALE) * ROUNDSCALE ; used for scaling
+		triangles[i].y1=objData->vertexList[ o->vertex_index[0] ]->e[1] ;
+		triangles[i].z1=objData->vertexList[ o->vertex_index[0] ]->e[2] ;
+		triangles[i].x2=objData->vertexList[ o->vertex_index[1] ]->e[0] ;
+		triangles[i].y2=objData->vertexList[ o->vertex_index[1] ]->e[1] ;
+		triangles[i].z2=objData->vertexList[ o->vertex_index[1] ]->e[2] ;
+		triangles[i].x3=objData->vertexList[ o->vertex_index[2] ]->e[0] ;
+		triangles[i].y3=objData->vertexList[ o->vertex_index[2] ]->e[1] ;
+		triangles[i].z3=objData->vertexList[ o->vertex_index[2] ]->e[2] ;
+	}
+    
+  double totalVolume = 0, currentVolume;
+  double xCenter = 0, yCenter = 0, zCenter = 0;
+
+  for (int i = 0; i < numTriangles; i++)
+  {
+      totalVolume += currentVolume = (triangles[i].x1*triangles[i].y2*triangles[i].z3 - triangles[i].x1*triangles[i].y3*triangles[i].z2 - triangles[i].x2*triangles[i].y1*triangles[i].z3 + triangles[i].x2*triangles[i].y3*triangles[i].z1 + triangles[i].x3*triangles[i].y1*triangles[i].z2 - triangles[i].x3*triangles[i].y2*triangles[i].z1) / 6;
+      xCenter += ((triangles[i].x1 + triangles[i].x2 + triangles[i].x3) / 4) * currentVolume;
+      yCenter += ((triangles[i].y1 + triangles[i].y2 + triangles[i].y3) / 4) * currentVolume;
+      zCenter += ((triangles[i].z1 + triangles[i].z2 + triangles[i].z3) / 4) * currentVolume;
+  }
+
+  
+
+  float COMX = (xCenter/totalVolume)/SCALE;
+  float COMY = (yCenter/totalVolume)/SCALE;
+  float COMZ = (zCenter/totalVolume)/SCALE;
+  printf("My COM:    %.4f, %.4f, %.4f\n", COMX, COMY, COMZ);
+  //object.centerOfMass = {COMX,COMY,COMZ};
+  object.centerOfMass = {0,0,1};
+
+
+
+
+  //Make 2D vector of indices for drawing 
+  int indexCount = object.indCount; 
+	for(int i=0; i<indexCount; i++)
+	{	vector<int> temp_vec;
+		temp_vec.push_back((objData->faceList[i])->vertex_index[0]);
+		temp_vec.push_back((objData->faceList[i])->vertex_index[1]);
+		temp_vec.push_back((objData->faceList[i])->vertex_index[2]);
+		object.indexDrawVec.push_back(temp_vec);
+	}
+
+  //Make 1D vector of indices for geometry
+  for(int i=0; i< indexCount; i++)
+  {	
+    object.indexGeomVec.push_back((objData->faceList[i])->vertex_index[0]);
+    object.indexGeomVec.push_back((objData->faceList[i])->vertex_index[1]);
+    object.indexGeomVec.push_back((objData->faceList[i])->vertex_index[2]);   
+  }
+
+  //Make 1D vector of vertices for drawing
+  int vertCount =  object.vertCount;
+	for(int i=0; i< vertCount ; i++){
+		object.vertexDrawVec.push_back( objData->vertexList[i]->e[0]/SCALE - object.centerOfMass[0]);
+		object.vertexDrawVec.push_back( objData->vertexList[i]->e[1]/SCALE - object.centerOfMass[1]);
+		object.vertexDrawVec.push_back( objData->vertexList[i]->e[2]/SCALE - object.centerOfMass[2]);	
+	}
+  
+  //Make 1D vector of vertices for geometry
+  for(int i=0; i< vertCount ; i++){
+		object.vertexGeomVec.push_back( objData->vertexList[i]->e[0]/SCALE - object.centerOfMass[0]);
+		object.vertexGeomVec.push_back( objData->vertexList[i]->e[1]/SCALE - object.centerOfMass[1]);
+		object.vertexGeomVec.push_back( objData->vertexList[i]->e[2]/SCALE - object.centerOfMass[2]);	
+	}
+
+
+
+
+
+
+
+
+
   int i,j,k;
   dMass m;
   object.IDnumber = number; 
@@ -141,20 +255,26 @@ void createObject (MyObject &object, int number, const dReal* center){
   dMatrix3 R;
     //set your own positions
   dBodySetPosition (object.body, center1[0], center1[1], center1[2]);
-  dRFromAxisAndAngle (R,0,0,1,dRandReal()*10.0-5.0);
+  dRFromAxisAndAngle (R,0,0,0,7); //0,0,1, dRandReal()*10.0-5.0);
   dBodySetRotation (object.body,R);
   dBodySetData (object.body,(void*)(size_t)i);
 
+  //build Trimesh
   dTriMeshDataID new_tmdata = dGeomTriMeshDataCreate();
-  dGeomTriMeshDataBuildSingle(new_tmdata, &Vertices[0], 3 * sizeof(float), VertexCount, 
-                              (dTriIndex*)&Indices[0], IndexCount, 3 * sizeof(dTriIndex));
+  dGeomTriMeshDataBuildSingle(new_tmdata, object.vertexGeomVec.data(), 3 * sizeof(float), 
+	     object.vertCount, (int*)object.indexGeomVec.data(), indexCount*3, 3 * sizeof(int));
+
+//  dGeomTriMeshDataBuildSingle(new_tmdata, &Vertices[0], 3 * sizeof(float), VertexCount, 
+//                              (dTriIndex*)&Indices[0], IndexCount, 3 * sizeof(dTriIndex));
   object.geom[0] = dCreateTriMesh(space, new_tmdata, 0, 0, 0);
   // remember the mesh's dTriMeshDataID on its userdata for convenience.
   dGeomSetData(object.geom[0], new_tmdata);        
   dMassSetTrimesh( &m, DENSITY, object.geom[0] );
-  printf("mass at %f %f %f\n", m.c[0], m.c[1], m.c[2]);
+  printf("ODE's COM: %.4f, %.4f, %.4f\n", m.c[0], m.c[1], m.c[2]);
   dGeomSetPosition(object.geom[0], m.c[0], m.c[1], m.c[2]);
-  dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]);
+  dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]); 
+  //dGeomSetPosition(object.geom[0], center1[0], center1[1], center1[2]);
+  //dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]);
 
   //set body loop
   for (k=0; k < GPB; k++){
@@ -162,6 +282,8 @@ void createObject (MyObject &object, int number, const dReal* center){
           dGeomSetBody(object.geom[k],object.body);
       }
   }
+
+
   dBodySetMass(object.body,&m);
 
 }
@@ -318,29 +440,43 @@ static void simLoop (int pause)
         }
       
         if (dGeomGetClass(obj[i].geom[j]) == dTriMeshClass) {
-          dTriIndex* Indices = (dTriIndex*)::Indices;
-
           const dReal* Pos = dGeomGetPosition(obj[i].geom[j]);
           const dReal* Rot = dGeomGetRotation(obj[i].geom[j]);
-        
-          for (int ii = 0; ii < IndexCount / 3; ii++) {
+  
+        for (int ii = 0; ii < obj[i].indCount; ii++) {
             const dReal v[9] = { // explicit conversion from float to dReal
-              Vertices[Indices[ii * 3 + 0] * 3 + 0],
-              Vertices[Indices[ii * 3 + 0] * 3 + 1],
-              Vertices[Indices[ii * 3 + 0] * 3 + 2],
-              Vertices[Indices[ii * 3 + 1] * 3 + 0],
-              Vertices[Indices[ii * 3 + 1] * 3 + 1],
-              Vertices[Indices[ii * 3 + 1] * 3 + 2],
-              Vertices[Indices[ii * 3 + 2] * 3 + 0],
-              Vertices[Indices[ii * 3 + 2] * 3 + 1],
-              Vertices[Indices[ii * 3 + 2] * 3 + 2]
+              obj[i].vertexDrawVec[obj[i].indexDrawVec[ii][0] * 3 + 0],
+              obj[i].vertexDrawVec[obj[i].indexDrawVec[ii][0] * 3 + 1],
+              obj[i].vertexDrawVec[obj[i].indexDrawVec[ii][0] * 3 + 2],
+              obj[i].vertexDrawVec[obj[i].indexDrawVec[ii][1] * 3 + 0],
+              obj[i].vertexDrawVec[obj[i].indexDrawVec[ii][1] * 3 + 1],
+              obj[i].vertexDrawVec[obj[i].indexDrawVec[ii][1] * 3 + 2],
+              obj[i].vertexDrawVec[obj[i].indexDrawVec[ii][2] * 3 + 0],
+              obj[i].vertexDrawVec[obj[i].indexDrawVec[ii][2] * 3 + 1],
+              obj[i].vertexDrawVec[obj[i].indexDrawVec[ii][2] * 3 + 2]
             };
             dsDrawTriangle(Pos, Rot, &v[0], &v[3], &v[6], 1);
           }
 
-          // tell the tri-tri collider the current transform of the trimesh --
-          // this is fairly important for good results.
-          
+/*
+          for (int ii = 0; ii < obj[i].indCount; ii++) {
+            const dReal v[9] = { // explicit conversion from float to dReal
+              Vertices[obj[i].indexDrawVec[ii][0] * 3 + 0],
+              Vertices[obj[i].indexDrawVec[ii][0] * 3 + 1],
+              Vertices[obj[i].indexDrawVec[ii][0] * 3 + 2],
+              Vertices[obj[i].indexDrawVec[ii][1] * 3 + 0],
+              Vertices[obj[i].indexDrawVec[ii][1] * 3 + 1],
+              Vertices[obj[i].indexDrawVec[ii][1] * 3 + 2],
+              Vertices[obj[i].indexDrawVec[ii][2] * 3 + 0],
+              Vertices[obj[i].indexDrawVec[ii][2] * 3 + 1],
+              Vertices[obj[i].indexDrawVec[ii][2] * 3 + 2]
+            };
+            dsDrawTriangle(Pos, Rot, &v[0], &v[3], &v[6], 1);
+          }
+  */ 
+
+      // tell the tri-tri collider the current transform of the trimesh --
+          // this is fairly important for good results.     
 		  // Fill in the (4x4) matrix.
 		  dReal* p_matrix = obj[i].matrix_dblbuff + ( obj[i].last_matrix_index * 16 );
 
@@ -393,6 +529,11 @@ int main (int argc, char **argv)
   // dWorldSetStepIslandsProcessingMaxThreadCount(world, 1);
   dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
 
+  //create an object
+  num++;
+  int i = 0;
+  createObject(obj[i], i, center1);
+  
   // run simulation
   dsSimulationLoop (argc,argv,352,288,&fn);
 
