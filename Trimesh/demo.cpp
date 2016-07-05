@@ -73,6 +73,8 @@ struct MyObject {
 
   int IDnumber;             //the number of the object
   dReal center[3];    //the center x,y,z coordinates
+  //rotation
+  //color
 
 
 };
@@ -221,6 +223,13 @@ static void command (int cmd)
     cmd = locase (cmd);
     
 
+//To Do
+//comment out/ delete unneccesarly code?
+//try to understand more what's happening with num and i
+//think critically about using an array.whatevr instead of bunny.whatver
+//instead of pressing 'j', just call the createObject function
+//work on loading in the .obj file data
+
 
     //my own command 
     if (cmd == 'j'){
@@ -261,7 +270,7 @@ static void command (int cmd)
 
 
 
-
+    //might want to keep this because might want to mix primitives with trimeshes
     if (cmd == 'b' || cmd == 's' || cmd == 'c' || cmd == 'x' || cmd == 'm' || cmd == 'y' ) {
         if (num < NUM) {
             i = num;
@@ -302,7 +311,7 @@ static void command (int cmd)
                 const dReal *pos = dBodyGetPosition (obj[k].body);
                 if (pos[2] > maxheight) maxheight = pos[2];
             }
-            dBodySetPosition (obj[i].body, 0,0,maxheight+4);
+            dBodySetPosition (obj[i].body, 1,0,maxheight+4);
             dRFromAxisAndAngle (R,0,0,1,dRandReal()*10.0-5.0);
         }
         dBodySetRotation (obj[i].body,R);
@@ -556,9 +565,6 @@ static void simLoop (int pause)
         if (obj[i].geom[j])
           if (dGeomGetClass(obj[i].geom[j]) == dTriMeshClass)
             setCurrentTransform(obj[i].geom[j]);
- 
-    setCurrentTransform(TriMesh1);
-    setCurrentTransform(TriMesh2);
   }
 #endif
 
@@ -633,43 +639,6 @@ static void simLoop (int pause)
     }
   }
 
-  dTriIndex* Indices = (dTriIndex*)::Indices;
-
-  {const dReal* Pos = dGeomGetPosition(TriMesh1);
-  const dReal* Rot = dGeomGetRotation(TriMesh1);
-
-  {for (int i = 0; i < IndexCount / 3; i++){
-    const dReal v[9] = { // explicit conversion from float to dReal
-      Vertices[Indices[i * 3 + 0] * 3 + 0],
-      Vertices[Indices[i * 3 + 0] * 3 + 1],
-      Vertices[Indices[i * 3 + 0] * 3 + 2],
-      Vertices[Indices[i * 3 + 1] * 3 + 0],
-      Vertices[Indices[i * 3 + 1] * 3 + 1],
-      Vertices[Indices[i * 3 + 1] * 3 + 2],
-      Vertices[Indices[i * 3 + 2] * 3 + 0],
-      Vertices[Indices[i * 3 + 2] * 3 + 1],
-      Vertices[Indices[i * 3 + 2] * 3 + 2]
-    };
-    dsDrawTriangle(Pos, Rot, &v[0], &v[3], &v[6], 0);
-  }}}
-
-  {const dReal* Pos = dGeomGetPosition(TriMesh2);
-  const dReal* Rot = dGeomGetRotation(TriMesh2);
-
-  {for (int i = 0; i < IndexCount / 3; i++){
-    const dReal v[9] = { // explicit conversion from float to dReal
-      Vertices[Indices[i * 3 + 0] * 3 + 0],
-      Vertices[Indices[i * 3 + 0] * 3 + 1],
-      Vertices[Indices[i * 3 + 0] * 3 + 2],
-      Vertices[Indices[i * 3 + 1] * 3 + 0],
-      Vertices[Indices[i * 3 + 1] * 3 + 1],
-      Vertices[Indices[i * 3 + 1] * 3 + 2],
-      Vertices[Indices[i * 3 + 2] * 3 + 0],
-      Vertices[Indices[i * 3 + 2] * 3 + 1],
-      Vertices[Indices[i * 3 + 2] * 3 + 2]
-    };
-    dsDrawTriangle(Pos, Rot, &v[0], &v[3], &v[6], 1);
-  }}}
 }
 
 
@@ -694,26 +663,6 @@ int main (int argc, char **argv)
   dWorldSetCFM (world,1e-5);
   dCreatePlane (space,0,0,1,0);
   memset (obj,0,sizeof(obj));
-
-  // note: can't share tridata if intending to trimesh-trimesh collide
-  TriData1 = dGeomTriMeshDataCreate();
-  dGeomTriMeshDataBuildSingle(TriData1, &Vertices[0], 3 * sizeof(float), VertexCount, (dTriIndex*)&Indices[0], IndexCount, 3 * sizeof(dTriIndex));
-  TriData2 = dGeomTriMeshDataCreate();
-  dGeomTriMeshDataBuildSingle(TriData2, &Vertices[0], 3 * sizeof(float), VertexCount, (dTriIndex*)&Indices[0], IndexCount, 3 * sizeof(dTriIndex));
-  
-  TriMesh1 = dCreateTriMesh(space, TriData1, 0, 0, 0);
-  TriMesh2 = dCreateTriMesh(space, TriData2, 0, 0, 0);
-  dGeomSetData(TriMesh1, TriData1);
-  dGeomSetData(TriMesh2, TriData2);
-  
-  {dGeomSetPosition(TriMesh1, -5, 0, 0.9);
-  dMatrix3 Rotation;
-  dRFromAxisAndAngle(Rotation, 1, 0, 0, M_PI / 2);
-  dGeomSetRotation(TriMesh1, Rotation);}
-  {dGeomSetPosition(TriMesh2, 5, 0, 0.9);
-  dMatrix3 Rotation;
-  dRFromAxisAndAngle(Rotation, 1, 0, 0, M_PI / 2);
-  dGeomSetRotation(TriMesh2, Rotation);}
   
   dThreadingImplementationID threading = dThreadingAllocateMultiThreadedImplementation();
   dThreadingThreadPoolID pool = dThreadingAllocateThreadPool(4, 0, dAllocateFlagBasicData, NULL);
