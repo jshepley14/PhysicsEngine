@@ -1,16 +1,25 @@
 //Joe Shepley CMY 2016
 //Static Equilibrium tester in ODE physics engine
+//
+// ***^^^PRESS N FOR A "RESET", PRESS J FOR A FALLING OBJECT^^^***
+//
 /****************************************************
 //                   To Do
+//
+//feed isEquilibrium the array of objects
+//find out the scale of the objects, should they be /1000 not /100?
+//
 //see why pikachu didn't work? could not find file. maybe instead of segfault catch that error? ask venkat
-//put rotation into the createObject function.  Use quatarions?
+// Use quatarions?
 //create vector of strings, create a scene
-//vector of rotations 
-//vector of centers
+// object.rotation?  
 //put in the check for static equi. function
 //investigate the num++ thing and how to solve that
 //make a createScene function
 //find the right balance for friction
+//check how long it takes
+//try different configs
+//setObject vs createObject
 /**********************************************/
 
 #include <ode/ode.h>
@@ -19,6 +28,8 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <cmath>
+#include <chrono>  //used for timing code
 #include <stdio.h>
 #include "objLoader.h"
 
@@ -48,10 +59,32 @@
 using namespace std;
 
 
+//Some COUNT, TIMESTEP pairs: 6, 0.1  and 20, 0.05
+//static equilibrium constants
+static int counter = 0;          //iterator which will reach COUNT
+static int COUNT = 20;            //how long until we want to wait to check satic equlibrium?
+static double THRESHHOLD = 0.1;  //how much movement is allowed
+//static double GRAVITY = -19.8;    
+//static double TIMESTEP = 0.02;    
+//Time step originally was at 0.01, but we may
+//be able to increase this making calculations faster
+//most efficient would prob be 0.01 ≤ TIMESTEP ≤ 0.03 
+
+
+//timer variables
+//need to add -std=c++11 right after g++ to compile
+static chrono::steady_clock::time_point startTime, endTime;
+
+
 //***********SOME POSITION CONSTANTS**************
-const dReal center1[3] = {0,0,6}; // length of edges
-const dReal center2[3] = {3,0,6}; // length of edges
-const dReal center3[3] = {-2,0,6}; // length of edges
+const dReal center1[3] = {2,-2,6}; // 
+const dReal center2[3] = {2,0,6}; // 
+const dReal center3[3] = {-2,0,2}; //
+const dReal center4[3] = {0,0,6}; //
+
+const dMatrix3 matrixStandard = { 1, 0, 0,
+                                  0, 0, 0,
+                                  0, 0, 0  };
 
 //***********************************************
 
@@ -151,13 +184,29 @@ static void start()
 }
 
 
+static void inStaticEquilibrium(MyObject &object){
 
+    double startZ = object.center[2];
+    double endZ = dBodyGetPosition(object.body)[2];
+    double deltaZ = std::abs(startZ - endZ);
+    //cout << "counter = " << COUNT  << " \n" << endl;
+    //cout << "THRESHHOLD : " << THRESHHOLD << " \n" << endl;
+    //Check if object moved since initialization
+    if ( (deltaZ) > THRESHHOLD){
+        //cout << "FALSE: Not in static equilibrium" << endl;
+    } else{ 
+      //  cout << "TRUE: Is in static equilibrium" << endl;
+    }
+    cout << "StartPosition: " << startZ << " " << endl;
+    cout << "EndPosition: " << endZ << " " << endl;
+    cout << "delta Z: " << deltaZ << " " << endl;
+}
  
 
 
 
 //To Do
-void createObject (MyObject &object, int number, const dReal* center, char* filename){
+void createObject (MyObject &object, int number, const dReal* center, const dMatrix3 R, char* filename){
   int SCALE =100;
   
   //Load the file
@@ -209,29 +258,40 @@ void createObject (MyObject &object, int number, const dReal* center, char* file
   dMass m;
   object.IDnumber = number; 
 
-  //why doesn't this work??
-  object.center[0] = center[0];
-  object.center[1] = center[1];
-  object.center[2] = center[2];
   
-  object.body = dBodyCreate (world);
-  dMatrix3 R;
-    //set your own positions
-  //dBodySetPosition (object.body, object.center[0], object.center[1], object.center[2]);
-  dBodySetPosition (object.body, center[0], center[1], center[2]);
-  dRFromAxisAndAngle (R,0,4,0,7); //0,0,1, dRandReal()*10.0-5.0);
-  dBodySetRotation (object.body,R);
-  dBodySetData (object.body,(void*)(size_t)i);
+  //cout<<object.center[0]<<","<< object.center[1]<<","<< object.center[2]<<endl;
 
-  //build Trimesh
+
+
+
+    //build Trimesh geom
   dTriMeshDataID new_tmdata = dGeomTriMeshDataCreate();
   dGeomTriMeshDataBuildSingle(new_tmdata, object.vertexGeomVec.data(), 3 * sizeof(float), 
 	     object.vertCount, (int*)object.indexGeomVec.data(), indexCount*3, 3 * sizeof(int));
-
-
   object.geom[0] = dCreateTriMesh(space, new_tmdata, 0, 0, 0);
   dGeomSetData(object.geom[0], new_tmdata);        
   dMassSetTrimesh( &m, DENSITY, object.geom[0] );
+
+  //gets the absolute bounding box
+  dReal aabb[6];
+  dGeomGetAABB (object.geom[0], aabb);
+  cout<<aabb[5]<<"\n";
+  dReal maxZ = aabb[5];
+
+  object.body = dBodyCreate (world);
+  //set positions
+  //dBodySetPosition (object.body, object.center[0], object.center[1], object.center[2]);
+  //dBodySetPosition (object.body, center[0], center[1], center[2]);
+
+  object.center[0] = center[0];
+  object.center[1] = center[1];
+  object.center[2] = center[2];
+  dBodySetPosition (object.body, object.center[0], object.center[1], object.center[2]);
+  //dBodySetPosition (object.body, center[0], center[1], maxZ/2);
+  //dRFromAxisAndAngle (R,0,0,0,0); //0,0,1, dRandReal()*10.0-5.0);
+  dBodySetRotation (object.body,R);
+  dBodySetData (object.body,(void*)(size_t)i);
+
 
   //set body loop
   for (k=0; k < GPB; k++){
@@ -240,15 +300,20 @@ void createObject (MyObject &object, int number, const dReal* center, char* file
       }
   }
   
-  printf("ODE's COM: %.4f, %.4f, %.4f\n", m.c[0], m.c[1], m.c[2]);
-  //dGeomSetPosition(object.geom[0], m.c[0], m.c[1], m.c[2]);
+  
+  //dGeomSetPosition(object.geom[0], m.c[0], m.c[1], m.c[2]);  <-- could be used for later? idk
   dGeomSetOffsetPosition(object.geom[0], -m.c[0],-m.c[1], -m.c[2]);
   dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]); 
-
-  
   dBodySetMass(object.body,&m);
 }
 
+
+void setObject(MyObject &object, const dReal* center, const dMatrix3 R ){
+      dBodySetPosition (object.body, center[0], center[1], 4);
+      dBodySetRotation (object.body, R);
+      dBodySetLinearVel(object.body, 0, 0, 0);
+      dBodySetAngularVel(object.body, 0, 0, 0);
+}
 
 
 // called when a key pressed
@@ -259,9 +324,19 @@ static void command (int cmd)
         //add a new object
         i = num;
         num++;
-        createObject(obj[i], i, center1, "milk_carton.obj");
+        createObject(obj[i], i, center4, matrixStandard, "red_mug.obj");
     }
+
+
+    if (cmd == 'n') {
+      //testing this
+      setObject(obj[0], center1, matrixStandard);
+    }
+
+
 }
+
+
 
 
 //destroys an object/ objects?
@@ -360,6 +435,22 @@ void setCurrentTransform(dGeomID geom)
 // simulation loop
 static void simLoop (int pause)
 {
+
+  if (counter == 0){
+     startTime = chrono::steady_clock::now();
+  }
+  else if (counter == COUNT){ //now we want to check
+  //  cout<<"FALSE: Scene 1"<<endl; <<output the known Truth value  
+    inStaticEquilibrium(obj[0]); //feed it in the Zinital and Zfinal coordinates of Box4
+    //end chrono timer
+    endTime = chrono::steady_clock::now();
+    auto diff = endTime - startTime;
+    cout << chrono::duration <double, milli> (diff).count() << " ms\n" << endl;
+  }
+
+  counter ++;
+
+
   dsSetColor (0,0,2);
   dSpaceCollide (space,0,&nearCallback);
 
@@ -376,7 +467,7 @@ static void simLoop (int pause)
   }
 #endif
 
-  if (!pause) dWorldQuickStep (world,0.05);
+  if (!pause) dWorldQuickStep (world,0.05); //originally 0.05
 
   for (int j = 0; j < dSpaceGetNumGeoms(space); j++){
 	  dSpaceGetGeom(space, j);
@@ -418,7 +509,6 @@ static void simLoop (int pause)
             };
             dsDrawTriangle(Pos, Rot, &v[0], &v[3], &v[6], 1);
           }
-
 
       // tell the tri-tri collider the current transform of the trimesh --
           // this is fairly important for good results.     
@@ -474,16 +564,16 @@ int main (int argc, char **argv)
   // dWorldSetStepIslandsProcessingMaxThreadCount(world, 1);
   dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
 
-  //create an object
+  //create objects
   num++;
   int i = 0;
-  createObject(obj[i], i, center1, "red_mug.obj");
-  printf("ok..?");
+  createObject(obj[i], i, center1, matrixStandard, "red_mug.obj");
   num++;
-  createObject(obj[1], 10, center2, "teacup.obj");
+  createObject(obj[1], 10, center2, matrixStandard, "teacup.obj");
   num++;
-  createObject(obj[2], 10, center3, "red_mug.obj");
+  createObject(obj[2], 10, center3, matrixStandard, "red_mug.obj");
   
+
   // run simulation
   dsSimulationLoop (argc,argv,352,288,&fn);
 
