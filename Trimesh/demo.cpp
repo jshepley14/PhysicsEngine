@@ -155,7 +155,7 @@ static void start()
 //To Do
 void createObject (MyObject &object, int number, const dReal* center){
   int SCALE =100;
-  dMass m;
+  
 
   //Load the file
   objLoader *objData = new objLoader();
@@ -164,48 +164,6 @@ void createObject (MyObject &object, int number, const dReal* center){
   //Get index and vertex count
   object.indCount = objData->faceCount;
   object.vertCount = objData->vertexCount;
-
-  //get the center of mass
-  int numTriangles = objData->faceCount; 
-	data triangles[numTriangles];
-	// fill the triangles array with the data in the STL file
-	for (int i =0; i < numTriangles; i ++){
-		obj_face *o = objData->faceList[i];
-		//cout<<o->vertex_index[0]<<"," <<o->vertex_index[1]<<","<< o->vertex_index[2] <<endl;
-		triangles[i].x1=objData->vertexList[ o->vertex_index[0] ]->e[0] ;  //(int)(objData->vertexList[ o->vertex_index[0] ]->e[0]/ROUNDSCALE) * ROUNDSCALE ; used for scaling
-		triangles[i].y1=objData->vertexList[ o->vertex_index[0] ]->e[1] ;
-		triangles[i].z1=objData->vertexList[ o->vertex_index[0] ]->e[2] ;
-		triangles[i].x2=objData->vertexList[ o->vertex_index[1] ]->e[0] ;
-		triangles[i].y2=objData->vertexList[ o->vertex_index[1] ]->e[1] ;
-		triangles[i].z2=objData->vertexList[ o->vertex_index[1] ]->e[2] ;
-		triangles[i].x3=objData->vertexList[ o->vertex_index[2] ]->e[0] ;
-		triangles[i].y3=objData->vertexList[ o->vertex_index[2] ]->e[1] ;
-		triangles[i].z3=objData->vertexList[ o->vertex_index[2] ]->e[2] ;
-	}
-    
-  double totalVolume = 0, currentVolume;
-  double xCenter = 0, yCenter = 0, zCenter = 0;
-
-  for (int i = 0; i < numTriangles; i++)
-  {
-      totalVolume += currentVolume = (triangles[i].x1*triangles[i].y2*triangles[i].z3 - triangles[i].x1*triangles[i].y3*triangles[i].z2 - triangles[i].x2*triangles[i].y1*triangles[i].z3 + triangles[i].x2*triangles[i].y3*triangles[i].z1 + triangles[i].x3*triangles[i].y1*triangles[i].z2 - triangles[i].x3*triangles[i].y2*triangles[i].z1) / 6;
-      xCenter += ((triangles[i].x1 + triangles[i].x2 + triangles[i].x3) / 4) * currentVolume;
-      yCenter += ((triangles[i].y1 + triangles[i].y2 + triangles[i].y3) / 4) * currentVolume;
-      zCenter += ((triangles[i].z1 + triangles[i].z2 + triangles[i].z3) / 4) * currentVolume;
-  }
-
-  
-
-  float COMX = (xCenter/totalVolume)/SCALE;
-  float COMY = (yCenter/totalVolume)/SCALE;
-  float COMZ = (zCenter/totalVolume)/SCALE;
-  printf("My COM:    %.4f, %.4f, %.4f\n", COMX, COMY, COMZ);
-  object.centerOfMass = {COMX,COMY,COMZ};
-  //object.centerOfMass = {0,0,1};
-  //object.centerOfMass = {0,0,1};
-  //object.centerOfMass = {m.c[0], m.c[1], m.c[2]};
-  //printf("ODE's COM: %.4f, %.4f, %.4f\n", m.c[0], m.c[1], m.c[2]);
-
 
 
   //Make 2D vector of indices for drawing 
@@ -229,28 +187,21 @@ void createObject (MyObject &object, int number, const dReal* center){
   //Make 1D vector of vertices for drawing
   int vertCount =  object.vertCount;
 	for(int i=0; i< vertCount ; i++){
-		object.vertexDrawVec.push_back( objData->vertexList[i]->e[0]/SCALE - object.centerOfMass[0]);
-		object.vertexDrawVec.push_back( objData->vertexList[i]->e[1]/SCALE - object.centerOfMass[1]);
-		object.vertexDrawVec.push_back( objData->vertexList[i]->e[2]/SCALE - object.centerOfMass[2]);	
+		object.vertexDrawVec.push_back( objData->vertexList[i]->e[0]/SCALE );
+		object.vertexDrawVec.push_back( objData->vertexList[i]->e[1]/SCALE );
+		object.vertexDrawVec.push_back( objData->vertexList[i]->e[2]/SCALE );	
 	}
   
   //Make 1D vector of vertices for geometry
   for(int i=0; i< vertCount ; i++){
-		object.vertexGeomVec.push_back( objData->vertexList[i]->e[0]/SCALE - object.centerOfMass[0]);
-		object.vertexGeomVec.push_back( objData->vertexList[i]->e[1]/SCALE - object.centerOfMass[1]);
-		object.vertexGeomVec.push_back( objData->vertexList[i]->e[2]/SCALE - object.centerOfMass[2]);	
+		object.vertexGeomVec.push_back( objData->vertexList[i]->e[0]/SCALE );
+		object.vertexGeomVec.push_back( objData->vertexList[i]->e[1]/SCALE );
+		object.vertexGeomVec.push_back( objData->vertexList[i]->e[2]/SCALE );	
 	}
 
 
-
-
-
-
-
-
-
   int i,j,k;
-  
+  dMass m;
   object.IDnumber = number; 
   object.center[0] = center[0];
   object.center[1] = center[1];
@@ -274,9 +225,22 @@ void createObject (MyObject &object, int number, const dReal* center){
   dGeomSetData(object.geom[0], new_tmdata);        
   dMassSetTrimesh( &m, DENSITY, object.geom[0] );
 
+  //set body loop
+  for (k=0; k < GPB; k++){
+      if (object.geom[k]){
+          dGeomSetBody(object.geom[k],object.body);
+      }
+  }
+  
+  printf("ODE's COM: %.4f, %.4f, %.4f\n", m.c[0], m.c[1], m.c[2]);
+  //dGeomSetPosition(object.geom[0], m.c[0], m.c[1], m.c[2]);
+  dGeomSetOffsetPosition(object.geom[0], -m.c[0],-m.c[1], -m.c[2]);
+  dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]); 
 
+  
+  dBodySetMass(object.body,&m);
 
-
+/*
   printf("ODE's COM: %.4f, %.4f, %.4f\n", m.c[0], m.c[1], m.c[2]);
   dGeomSetPosition(object.geom[0], m.c[0], m.c[1], m.c[2]);
   //dGeomSetOffsetPosition(object.geom[0], 0,0,0);
@@ -289,7 +253,7 @@ void createObject (MyObject &object, int number, const dReal* center){
       }
   }
   dBodySetMass(object.body,&m);
-
+*/
 
 
 }
