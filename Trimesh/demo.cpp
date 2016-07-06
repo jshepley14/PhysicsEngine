@@ -2,14 +2,15 @@
 //Static Equilibrium tester in ODE physics engine
 /****************************************************
 //                   To Do
-//see why pikachu didn't work
-//see if I can use ODE's COM funciton.
-//
-//comment out/ delete unneccesarly code?
-//try to understand more what's happening with num and i
-//think critically about using an array.whatevr instead of bunny.whatver
-//instead of pressing 'j', just call the createObject function
-//work on loading in the .obj file data
+//see why pikachu didn't work? could not find file. maybe instead of segfault catch that error? ask venkat
+//put rotation into the createObject function.  Use quatarions?
+//create vector of strings, create a scene
+//vector of rotations 
+//vector of centers
+//put in the check for static equi. function
+//investigate the num++ thing and how to solve that
+//make a createScene function
+//find the right balance for friction
 /**********************************************/
 
 #include <ode/ode.h>
@@ -49,6 +50,8 @@ using namespace std;
 
 //***********SOME POSITION CONSTANTS**************
 const dReal center1[3] = {0,0,6}; // length of edges
+const dReal center2[3] = {3,0,6}; // length of edges
+const dReal center3[3] = {-2,0,6}; // length of edges
 
 //***********************************************
 
@@ -63,7 +66,8 @@ struct MyObject {
   dReal matrix_dblbuff[ 16 * 2 ];
   int last_matrix_index;
 
-  int IDnumber;             //the number of the object
+  int IDnumber;      //the number of the object
+  //ADD fileName; ?         
   dReal center[3];    //the center x,y,z coordinates
   //ADD rotation
   //ADD color?
@@ -114,10 +118,10 @@ static void nearCallback (void *, dGeomID o1, dGeomID o2)
   dContact contact[MAX_CONTACTS];   // up to MAX_CONTACTS contacts per box-box
   for (i=0; i<MAX_CONTACTS; i++) {
     contact[i].surface.mode = dContactBounce | dContactSoftCFM;
-    contact[i].surface.mu = dInfinity;
+    contact[i].surface.mu = 1; //find the right balance //dInfinity;
     contact[i].surface.mu2 = 0;
-    contact[i].surface.bounce = 0.1;
-    contact[i].surface.bounce_vel = 0.1;
+    contact[i].surface.bounce = 0.0; //0.1;
+    contact[i].surface.bounce_vel = 0.0; // 0.1;
     contact[i].surface.soft_cfm = 0.01;
   }
   if (int numc = dCollide (o1,o2,MAX_CONTACTS,&contact[0].geom,
@@ -153,15 +157,16 @@ static void start()
 
 
 //To Do
-void createObject (MyObject &object, int number, const dReal* center){
+void createObject (MyObject &object, int number, const dReal* center, char* filename){
   int SCALE =100;
   
-
   //Load the file
   objLoader *objData = new objLoader();
-	objData->load("milk_carton.obj");
+	objData->load(filename);
 
   //Get index and vertex count
+  //string s(filename);
+  //obj.fileName=filename;
   object.indCount = objData->faceCount;
   object.vertCount = objData->vertexCount;
 
@@ -203,6 +208,8 @@ void createObject (MyObject &object, int number, const dReal* center){
   int i,j,k;
   dMass m;
   object.IDnumber = number; 
+
+  //why doesn't this work??
   object.center[0] = center[0];
   object.center[1] = center[1];
   object.center[2] = center[2];
@@ -210,7 +217,8 @@ void createObject (MyObject &object, int number, const dReal* center){
   object.body = dBodyCreate (world);
   dMatrix3 R;
     //set your own positions
-  dBodySetPosition (object.body, center1[0], center1[1], center1[2]);
+  //dBodySetPosition (object.body, object.center[0], object.center[1], object.center[2]);
+  dBodySetPosition (object.body, center[0], center[1], center[2]);
   dRFromAxisAndAngle (R,0,4,0,7); //0,0,1, dRandReal()*10.0-5.0);
   dBodySetRotation (object.body,R);
   dBodySetData (object.body,(void*)(size_t)i);
@@ -239,23 +247,6 @@ void createObject (MyObject &object, int number, const dReal* center){
 
   
   dBodySetMass(object.body,&m);
-
-/*
-  printf("ODE's COM: %.4f, %.4f, %.4f\n", m.c[0], m.c[1], m.c[2]);
-  dGeomSetPosition(object.geom[0], m.c[0], m.c[1], m.c[2]);
-  //dGeomSetOffsetPosition(object.geom[0], 0,0,0);
-  dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]); 
-
-  //set body loop
-  for (k=0; k < GPB; k++){
-      if (object.geom[k]){
-          dGeomSetBody(object.geom[k],object.body);
-      }
-  }
-  dBodySetMass(object.body,&m);
-*/
-
-
 }
 
 
@@ -268,7 +259,7 @@ static void command (int cmd)
         //add a new object
         i = num;
         num++;
-        createObject(obj[i], i, center1);
+        createObject(obj[i], i, center1, "milk_carton.obj");
     }
 }
 
@@ -428,22 +419,6 @@ static void simLoop (int pause)
             dsDrawTriangle(Pos, Rot, &v[0], &v[3], &v[6], 1);
           }
 
-/*
-          for (int ii = 0; ii < obj[i].indCount; ii++) {
-            const dReal v[9] = { // explicit conversion from float to dReal
-              Vertices[obj[i].indexDrawVec[ii][0] * 3 + 0],
-              Vertices[obj[i].indexDrawVec[ii][0] * 3 + 1],
-              Vertices[obj[i].indexDrawVec[ii][0] * 3 + 2],
-              Vertices[obj[i].indexDrawVec[ii][1] * 3 + 0],
-              Vertices[obj[i].indexDrawVec[ii][1] * 3 + 1],
-              Vertices[obj[i].indexDrawVec[ii][1] * 3 + 2],
-              Vertices[obj[i].indexDrawVec[ii][2] * 3 + 0],
-              Vertices[obj[i].indexDrawVec[ii][2] * 3 + 1],
-              Vertices[obj[i].indexDrawVec[ii][2] * 3 + 2]
-            };
-            dsDrawTriangle(Pos, Rot, &v[0], &v[3], &v[6], 1);
-          }
-  */ 
 
       // tell the tri-tri collider the current transform of the trimesh --
           // this is fairly important for good results.     
@@ -502,7 +477,12 @@ int main (int argc, char **argv)
   //create an object
   num++;
   int i = 0;
-  createObject(obj[i], i, center1);
+  createObject(obj[i], i, center1, "red_mug.obj");
+  printf("ok..?");
+  num++;
+  createObject(obj[1], 10, center2, "teacup.obj");
+  num++;
+  createObject(obj[2], 10, center3, "red_mug.obj");
   
   // run simulation
   dsSimulationLoop (argc,argv,352,288,&fn);
