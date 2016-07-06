@@ -2,6 +2,8 @@
 //Static Equilibrium tester in ODE physics engine
 /****************************************************
 //                   To Do
+//see why pikachu didn't work
+//see if I can use ODE's COM funciton.
 //
 //comment out/ delete unneccesarly code?
 //try to understand more what's happening with num and i
@@ -153,6 +155,7 @@ static void start()
 //To Do
 void createObject (MyObject &object, int number, const dReal* center){
   int SCALE =100;
+  dMass m;
 
   //Load the file
   objLoader *objData = new objLoader();
@@ -197,9 +200,11 @@ void createObject (MyObject &object, int number, const dReal* center){
   float COMY = (yCenter/totalVolume)/SCALE;
   float COMZ = (zCenter/totalVolume)/SCALE;
   printf("My COM:    %.4f, %.4f, %.4f\n", COMX, COMY, COMZ);
-  //object.centerOfMass = {COMX,COMY,COMZ};
-  object.centerOfMass = {0,0,1};
-
+  object.centerOfMass = {COMX,COMY,COMZ};
+  //object.centerOfMass = {0,0,1};
+  //object.centerOfMass = {0,0,1};
+  //object.centerOfMass = {m.c[0], m.c[1], m.c[2]};
+  //printf("ODE's COM: %.4f, %.4f, %.4f\n", m.c[0], m.c[1], m.c[2]);
 
 
 
@@ -245,7 +250,7 @@ void createObject (MyObject &object, int number, const dReal* center){
 
 
   int i,j,k;
-  dMass m;
+  
   object.IDnumber = number; 
   object.center[0] = center[0];
   object.center[1] = center[1];
@@ -255,7 +260,7 @@ void createObject (MyObject &object, int number, const dReal* center){
   dMatrix3 R;
     //set your own positions
   dBodySetPosition (object.body, center1[0], center1[1], center1[2]);
-  dRFromAxisAndAngle (R,0,0,0,7); //0,0,1, dRandReal()*10.0-5.0);
+  dRFromAxisAndAngle (R,0,4,0,7); //0,0,1, dRandReal()*10.0-5.0);
   dBodySetRotation (object.body,R);
   dBodySetData (object.body,(void*)(size_t)i);
 
@@ -264,17 +269,18 @@ void createObject (MyObject &object, int number, const dReal* center){
   dGeomTriMeshDataBuildSingle(new_tmdata, object.vertexGeomVec.data(), 3 * sizeof(float), 
 	     object.vertCount, (int*)object.indexGeomVec.data(), indexCount*3, 3 * sizeof(int));
 
-//  dGeomTriMeshDataBuildSingle(new_tmdata, &Vertices[0], 3 * sizeof(float), VertexCount, 
-//                              (dTriIndex*)&Indices[0], IndexCount, 3 * sizeof(dTriIndex));
+
   object.geom[0] = dCreateTriMesh(space, new_tmdata, 0, 0, 0);
-  // remember the mesh's dTriMeshDataID on its userdata for convenience.
   dGeomSetData(object.geom[0], new_tmdata);        
   dMassSetTrimesh( &m, DENSITY, object.geom[0] );
+
+
+
+
   printf("ODE's COM: %.4f, %.4f, %.4f\n", m.c[0], m.c[1], m.c[2]);
   dGeomSetPosition(object.geom[0], m.c[0], m.c[1], m.c[2]);
+  //dGeomSetOffsetPosition(object.geom[0], 0,0,0);
   dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]); 
-  //dGeomSetPosition(object.geom[0], center1[0], center1[1], center1[2]);
-  //dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]);
 
   //set body loop
   for (k=0; k < GPB; k++){
@@ -282,9 +288,9 @@ void createObject (MyObject &object, int number, const dReal* center){
           dGeomSetBody(object.geom[k],object.body);
       }
   }
-
-
   dBodySetMass(object.body,&m);
+
+
 
 }
 
