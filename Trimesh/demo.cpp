@@ -615,14 +615,24 @@ static void simLoop (int pause)
     //destroy the scene
     int k;
     for (int i=0; i<num; i++){
+        
         dBodyDestroy (obj[i].body);
         for (k=0; k < GPB; k++) {
             if (obj[i].geom[k]) dGeomDestroy (obj[i].geom[k]);
         }
-        memset (&obj[i],0,sizeof(obj[i]));
+        //memset (&obj[i],0,sizeof(obj[i]));
     }
+    //num=0;
+    cout<<"Num: "<<num<<"\n";
 
-    //counter = 0;
+  
+  makeObject(obj[0], center1, matrixStandard);     
+  makeObject(obj[1], center2, matrixStandard);    
+  makeObject(obj[2], center3, matrixStandard);    
+  makeObject(obj[3], center5, matrixStandard);
+
+
+    counter = 0;
     //end chrono timer
   endTime = chrono::steady_clock::now();
   auto diff = endTime - startTime;
