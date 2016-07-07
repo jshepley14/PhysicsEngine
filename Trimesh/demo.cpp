@@ -5,9 +5,7 @@
 //
 /****************************************************
 //                   To Do
-//to time just have a loop which keeps checking these two scenes
 //after setting new scene set counter to 0 so it loops again
-//try to make a break function, so for loop breaks if even one object is not in static equi
 //try to print out final rotation matrix
 //need a metric of what is actually stable
 //ask venkat what the grid layout will be? should i only test discrete numbers?
@@ -37,8 +35,6 @@
 #include <stdio.h>
 #include "objLoader.h"
 
-
-
 #ifdef _MSC_VER
 #pragma warning(disable:4244 4305)  // for VC++, no precision loss complaints
 #endif
@@ -53,12 +49,13 @@
 #define dsDrawTriangle dsDrawTriangleD
 #endif
 
-
 // some constants
 #define NUM 200			// max number of objects
 #define DENSITY (5.0)		// density of all objects
 #define GPB 3			// maximum number of geometries per body
 #define MAX_CONTACTS 64		// maximum number of contact points per body
+
+//#define DRAW  //used to switch on or off the drawing of the scene
 
 using namespace std;
 
@@ -208,26 +205,59 @@ static void start()
 
 static bool inStaticEquilibrium(MyObject &object){
 
+    double startX = object.center[0];
+    double startY = object.center[1];
     double startZ = object.center[2];
+    double endX = dBodyGetPosition(object.body)[0];
+    double endY = dBodyGetPosition(object.body)[1];
     double endZ = dBodyGetPosition(object.body)[2];
+    double deltaX = std::abs(startX - endX);
+    double deltaY = std::abs(startY - endY); 
     double deltaZ = std::abs(startZ - endZ);
     //cout << "counter = " << COUNT  << " \n" << endl;
     //cout << "THRESHHOLD : " << THRESHHOLD << " \n" << endl;
     //Check if object moved since initialization
-    if ( (deltaZ) > THRESHHOLD){
+    cout<<"          X            Y            Z"  <<endl;
+    cout<<"Start: "<<startX<<", "<<startY<<", "<<startZ<<endl;
+    cout<<"  End: "<<endX<<", "<<endY<<", "<<endZ<<endl;
+    cout<<"Delta: "<<deltaX<<", "<<deltaY<<", "<<deltaZ<<endl;
+    if ( deltaX > THRESHHOLD || deltaY > THRESHHOLD || deltaZ > THRESHHOLD){
         return false;
         //cout << "FALSE: Not in static equilibrium" << endl;
     } else{ 
         return true;
         //cout << "TRUE: Is in static equilibrium" << endl;
     }
-    //cout << "StartPosition: " << startZ << " " << endl;
-    //cout << "EndPosition: " << endZ << " " << endl;
-    cout << "delta Z: " << deltaZ << " " << endl;
 }
  
+//eventually it should take a list of nums/IDs use hashmap?
+static bool isValidScene(int num){
+    bool stable = true;
+    for (int i=0; i<num; i++){ 
+       if (!inStaticEquilibrium(obj[i]) ){
+          //cout << "FALSE: Not in static equilibrium" << endl;
+          stable = false;
+          break;        
+       } 
+    } 
+    if (stable == true){
+      cout << "TRUE: Is in static equilibrium" << endl;
+    } else{
+      cout << "FALSE: Not in static equilibrium" << endl;
+    }
+}
 
-
+//eventually it should take a list of nums/IDs use hashmap?
+static void destroyObjects(int num){
+    //destroy the scene
+    int k;
+    for (int i=0; i<num; i++){     
+        dBodyDestroy (obj[i].body);
+        for (k=0; k < GPB; k++) {
+            if (obj[i].geom[k]) dGeomDestroy (obj[i].geom[k]);
+        }
+    }
+}
 
 //To Do
 void setObject (MyObject &object, int number, char* filename){
@@ -440,7 +470,10 @@ void createObject (MyObject &object, int number, const dReal* center, const dMat
 
 
 void translateObject(MyObject &object, const dReal* center, const dMatrix3 R ){
-      dBodySetPosition (object.body, center[0], center[1], 4);
+      object.center[0] = center[0];
+      object.center[1] = center[1];
+      object.center[2] = center[2];
+      dBodySetPosition (object.body, center[0], center[1], center[2]);
       dBodySetRotation (object.body, R);
       dBodySetLinearVel(object.body, 0, 0, 0);
       dBodySetAngularVel(object.body, 0, 0, 0);
@@ -567,9 +600,9 @@ void setCurrentTransform(dGeomID geom)
 static void simLoop (int pause)
 {
 
-  if (counter == 0){
+  if (counter == 1){
      startTime = chrono::steady_clock::now();
-     
+     num = 4;
       //set the new scene     
       makeObject(obj[0], center1, matrixStandard);     
       makeObject(obj[1], center2, matrixStandard);    
@@ -578,65 +611,30 @@ static void simLoop (int pause)
   }
 
   else if (counter == COUNT){ 
-   cout<<"TRUE: Scene 1"<<endl; //<<output the known Truth value
-
-    for (int i=0; i<num; i++){ 
-       if (!inStaticEquilibrium(obj[i]) ){
-          cout << "FALSE: Not in static equilibrium" << endl;
-          break;        
-       } else{
-          cout << "TRUE: Is in static equilibrium" << endl;
-       }
-    } 
-
+    cout<<"TRUE: Scene 1"<<endl; //output the known Truth value
+    isValidScene(num);           //output program's Truth value
     
-    //set the new scene
-    
-
+    //set the new scene by translating
     translateObject(obj[0], center1_2, matrixStandard);
     translateObject(obj[1], center2_2, matrixStandard);
     translateObject(obj[2], center3_2, matrixStandard);
-    translateObject(obj[3], center4_2, matrixStandard);
-    
-    
+    translateObject(obj[3], center4_2, matrixStandard);  
   }
 
   else if (counter == COUNT*2){
     cout<<"FALSE: Scene 2"<<endl; //<<output the known Truth value
-    for (int i=0; i<num; i++){ 
-       if (!inStaticEquilibrium(obj[i]) ){
-          cout << "FALSE: Not in static equilibrium" << endl;
-          break;        
-       } else{
-          cout << "TRUE: Is in static equilibrium" << endl;
-       }
-    }
-
-    //destroy the scene
-    int k;
-    for (int i=0; i<num; i++){
-        
-        dBodyDestroy (obj[i].body);
-        for (k=0; k < GPB; k++) {
-            if (obj[i].geom[k]) dGeomDestroy (obj[i].geom[k]);
-        }
-        //memset (&obj[i],0,sizeof(obj[i]));
-    }
-    //num=0;
+    isValidScene(num);
+    
+    destroyObjects(num);
+    num=num-num;
     cout<<"Num: "<<num<<"\n";
 
-  
-  makeObject(obj[0], center1, matrixStandard);     
-  makeObject(obj[1], center2, matrixStandard);    
-  makeObject(obj[2], center3, matrixStandard);    
-  makeObject(obj[3], center5, matrixStandard);
-
-
+    //reset the loop
     counter = 0;
     //end chrono timer
-  endTime = chrono::steady_clock::now();
-  auto diff = endTime - startTime;
-  cout << chrono::duration <double, milli> (diff).count() << " ms\n" << endl;    
+    endTime = chrono::steady_clock::now();
+    auto diff = endTime - startTime;
+    cout << chrono::duration <double, milli> (diff).count() << " ms\n" << endl;    
   }
 
 
@@ -782,19 +780,18 @@ int main (int argc, char **argv)
   */
   //num++;
   //createObject(obj[4], 10, center6, matrixSideways, "milk_carton.obj");
-  num++;
+  
   int i = 0;
   setObject(obj[i], i,  "red_mug.obj");
-  num++;
   setObject(obj[1], 10,  "teacup.obj");
-  num++;
   setObject(obj[2], 10,  "red_mug.obj");
-  num++;
   setObject(obj[3], 10,  "red_mug.obj");
   
 
   // run simulation
+  //#ifdef DRAW
   dsSimulationLoop (argc,argv,1000,1000,&fn);
+ 
 
   dThreadingImplementationShutdownProcessing(threading);
   dThreadingFreeThreadPool(pool);
