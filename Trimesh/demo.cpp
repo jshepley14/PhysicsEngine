@@ -5,21 +5,21 @@
 //
 /****************************************************
 //                   To Do
-//after setting new scene set counter to 0 so it loops again
+//Venkat: what the grid layout will be? should i only test discrete numbers?
+//Venkat: how do I call isStable() in the simloop?
+//Venkat: figure out affine3d
+//see how long it takes to translate vs create and destroy
+//
 //try to print out final rotation matrix
 //need a metric of what is actually stable
-//ask venkat what the grid layout will be? should i only test discrete numbers?
-//feed isEquilibrium just num and then it will go through the array?
 //find out the scale of the objects, should they be /1000 not /100?
-//turn off drawing function
 //see why pikachu didn't work? could not find file. maybe instead of segfault catch that error? ask venkat
 // Use quatarions?
 //create vector of strings, create a scene
 // object.rotation?  
-//investigate the num++ thing and how to solve that
+//remember the importance of num++ or num in general, creating and deleting
 //make a createScene function
 //find the right balance for friction
-//check how long it takes
 //try different configs
 //how to detect if two trimeshes are stuck inside eachother
 /**********************************************/
@@ -62,11 +62,13 @@ using namespace std;
 
 //Some COUNT, TIMESTEP pairs: 6, 0.1  and 20, 0.05
 //static equilibrium constants
+static int GlobalCounter = 0;
 static int counter = 0;          //iterator which will reach COUNT
 static int COUNT = 20; //20?            //how long until we want to wait to check satic equlibrium?
 static double THRESHHOLD = 0.1;  //how much movement is allowed
 //static double GRAVITY = -19.8;    
-//static double TIMESTEP = 0.02;    
+static double TIMESTEP = 0.05;
+
 //Time step originally was at 0.01, but we may
 //be able to increase this making calculations faster
 //most efficient would prob be 0.01 ≤ TIMESTEP ≤ 0.03 
@@ -75,6 +77,7 @@ static double THRESHHOLD = 0.1;  //how much movement is allowed
 //timer variables
 //need to add -std=c++11 right after g++ to compile
 static chrono::steady_clock::time_point startTime, endTime;
+static int NUMBERofSCENES=1000;
 
 
 //***********SOME POSITION CONSTANTS**************
@@ -217,10 +220,10 @@ static bool inStaticEquilibrium(MyObject &object){
     //cout << "counter = " << COUNT  << " \n" << endl;
     //cout << "THRESHHOLD : " << THRESHHOLD << " \n" << endl;
     //Check if object moved since initialization
-    cout<<"          X            Y            Z"  <<endl;
-    cout<<"Start: "<<startX<<", "<<startY<<", "<<startZ<<endl;
-    cout<<"  End: "<<endX<<", "<<endY<<", "<<endZ<<endl;
-    cout<<"Delta: "<<deltaX<<", "<<deltaY<<", "<<deltaZ<<endl;
+    //cout<<"          X            Y            Z"  <<endl;
+    //cout<<"Start: "<<startX<<", "<<startY<<", "<<startZ<<endl;
+    //cout<<"  End: "<<endX<<", "<<endY<<", "<<endZ<<endl;
+    //cout<<"Delta: "<<deltaX<<", "<<deltaY<<", "<<deltaZ<<endl;
     if ( deltaX > THRESHHOLD || deltaY > THRESHHOLD || deltaZ > THRESHHOLD){
         return false;
         //cout << "FALSE: Not in static equilibrium" << endl;
@@ -241,9 +244,9 @@ static bool isValidScene(int num){
        } 
     } 
     if (stable == true){
-      cout << "TRUE: Is in static equilibrium" << endl;
+      //cout << "TRUE: Is in static equilibrium" << endl;
     } else{
-      cout << "FALSE: Not in static equilibrium" << endl;
+      //cout << "FALSE: Not in static equilibrium" << endl;
     }
 }
 
@@ -325,7 +328,7 @@ void makeObject (MyObject &object, const dReal* center, const dMatrix3 R){
   //gets the absolute bounding box
   dReal aabb[6];
   dGeomGetAABB (object.geom[0], aabb);
-  cout<<aabb[5]/2<<"\n";
+  //cout<<aabb[5]/2<<"\n";
   dReal maxZ = aabb[5]/2;
 
   object.body = dBodyCreate (world);
@@ -432,7 +435,7 @@ void createObject (MyObject &object, int number, const dReal* center, const dMat
   //gets the absolute bounding box
   dReal aabb[6];
   dGeomGetAABB (object.geom[0], aabb);
-  cout<<aabb[5]/2<<"\n";
+  //cout<<aabb[5]/2<<"\n";
   dReal maxZ = aabb[5]/2;
 
   object.body = dBodyCreate (world);
@@ -600,8 +603,26 @@ void setCurrentTransform(dGeomID geom)
 static void simLoop (int pause)
 {
 
-  if (counter == 1){
-     startTime = chrono::steady_clock::now();
+  if (counter == 0){
+
+    startTime = chrono::steady_clock::now();
+  }
+
+  if( GlobalCounter == NUMBERofSCENES/2 ){
+    GlobalCounter = 11;
+    //cout<<"STOP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
+    counter=10000;
+    //cout<<"Counter:  "<<counter<<"\n";
+    //end chrono timer
+    endTime = chrono::steady_clock::now();
+    auto diff = endTime - startTime;
+    cout <<"Time: "<< chrono::duration <double, milli> (diff).count() << " ms" << endl;
+    cout<< "Scenes: "<<NUMBERofSCENES<<endl;
+    cout<<" Time per Scene: "<<(chrono::duration <double, milli> (diff).count())/NUMBERofSCENES<<"ms"<<endl;
+    cout<<"ctrl C to quit";
+  }
+
+  if (counter == 1){  
      num = 4;
       //set the new scene     
       makeObject(obj[0], center1, matrixStandard);     
@@ -610,8 +631,9 @@ static void simLoop (int pause)
       makeObject(obj[3], center5, matrixStandard);     
   }
 
-  else if (counter == COUNT){ 
-    cout<<"TRUE: Scene 1"<<endl; //output the known Truth value
+  else if (counter == COUNT){
+    //dsStop(); 
+    //cout<<"TRUE: Scene 1"<<endl; //output the known Truth value
     isValidScene(num);           //output program's Truth value
     
     //set the new scene by translating
@@ -622,21 +644,24 @@ static void simLoop (int pause)
   }
 
   else if (counter == COUNT*2){
-    cout<<"FALSE: Scene 2"<<endl; //<<output the known Truth value
+    //cout<<"FALSE: Scene 2"<<endl; //<<output the known Truth value
     isValidScene(num);
     
     destroyObjects(num);
     num=num-num;
-    cout<<"Num: "<<num<<"\n";
+    //cout<<"Num: "<<num<<"\n";
 
     //reset the loop
     counter = 0;
+    /*
     //end chrono timer
     endTime = chrono::steady_clock::now();
     auto diff = endTime - startTime;
-    cout << chrono::duration <double, milli> (diff).count() << " ms\n" << endl;    
+    cout << chrono::duration <double, milli> (diff).count() << " ms\n" << endl;
+    */    
+    GlobalCounter++;
   }
-
+  counter ++;
 
 
   //print out the final rotation matrix
@@ -650,10 +675,10 @@ static void simLoop (int pause)
   }
   */
 
-  counter ++;
+  
 
 
-  dsSetColor (0,0,2);
+  //dsSetColor (0,0,2);
   dSpaceCollide (space,0,&nearCallback);
 
 
@@ -669,7 +694,7 @@ static void simLoop (int pause)
   }
 #endif
 
-  if (!pause) dWorldQuickStep (world,0.05); //originally 0.05
+  if (!pause) dWorldQuickStep (world,TIMESTEP); //originally 0.05
 
   for (int j = 0; j < dSpaceGetNumGeoms(space); j++){
 	  dSpaceGetGeom(space, j);
@@ -678,25 +703,32 @@ static void simLoop (int pause)
   // remove all contact joints
   dJointGroupEmpty (contactgroup);
 
+
+
+  #ifdef DRAW
   dsSetColor (1,1,0);
   dsSetTexture (DS_WOOD);
+  #else
+  #endif
+
   for (int i=0; i<num; i++) {
     for (int j=0; j < GPB; j++) {
       if (obj[i].geom[j]) {
         if (i==selected) {
-          dsSetColor (0,0.7,1);
+          //dsSetColor (0,0.7,1);
         }
         else if (! dBodyIsEnabled (obj[i].body)) {
-          dsSetColor (1,0,0);
+          //dsSetColor (1,0,0);
         }
         else {
-          dsSetColor (1,1,0);
+          //dsSetColor (1,1,0);
         }
       
         if (dGeomGetClass(obj[i].geom[j]) == dTriMeshClass) {
           const dReal* Pos = dGeomGetPosition(obj[i].geom[j]);
           const dReal* Rot = dGeomGetRotation(obj[i].geom[j]);
   
+        #ifdef DRAW
         for (int ii = 0; ii < obj[i].indCount; ii++) {
             const dReal v[9] = { // explicit conversion from float to dReal
               obj[i].vertexDrawVec[obj[i].indexDrawVec[ii][0] * 3 + 0],
@@ -711,6 +743,8 @@ static void simLoop (int pause)
             };
             dsDrawTriangle(Pos, Rot, &v[0], &v[3], &v[6], 1);
           }
+          #else
+          #endif
 
       // tell the tri-tri collider the current transform of the trimesh --
           // this is fairly important for good results.     
@@ -729,11 +763,16 @@ static void simLoop (int pause)
 			  *(dMatrix4*)( obj[i].matrix_dblbuff + obj[i].last_matrix_index * 16 ) );
   
         } else {
-          drawGeom (obj[i].geom[j],0,0,show_aabb);
+          //drawGeom (obj[i].geom[j],0,0,show_aabb);
         }
       }
     }
   }
+
+
+
+
+
 
 }
 
@@ -746,7 +785,7 @@ int main (int argc, char **argv)
   fn.start = &start;
   fn.step = &simLoop;
   fn.command = &command;
-  fn.stop = 0;
+  fn.stop = NULL;
   fn.path_to_textures = "/home/joeshepley/ode-0.13.1/drawstuff/textures";
 
   // create world
@@ -789,9 +828,13 @@ int main (int argc, char **argv)
   
 
   // run simulation
-  //#ifdef DRAW
+  #ifdef DRAW
   dsSimulationLoop (argc,argv,1000,1000,&fn);
- 
+  #else
+  while (1) {
+    simLoop(0);
+  }
+  #endif
 
   dThreadingImplementationShutdownProcessing(threading);
   dThreadingFreeThreadPool(pool);
@@ -804,3 +847,22 @@ int main (int argc, char **argv)
   dCloseODE();
   return 0;
 }
+
+//Venkat's pseudo-code
+/*
+main() {
+SetScene(...)
+for (500 counts) {
+CheckSceneValid(scene)
+}
+SetScene(...)
+for (500 counts) {
+CheckSceneValid(...)
+}
+}
+
+CheckSceneValid(scene) {
+  bool EQUAl = ForwardSimulateScene(scene, NUM_TIMESTEPS, forward_simulated_scene);
+  return equAL;
+}
+*/
