@@ -5,10 +5,15 @@
 //
 /****************************************************
 //                   To Do
-//
+//to time just have a loop which keeps checking these two scenes
+//after setting new scene set counter to 0 so it loops again
+//try to make a break function, so for loop breaks if even one object is not in static equi
+//try to print out final rotation matrix
+//need a metric of what is actually stable
+//ask venkat what the grid layout will be? should i only test discrete numbers?
 //feed isEquilibrium the array of objects
 //find out the scale of the objects, should they be /1000 not /100?
-//
+//turn off drawing function
 //see why pikachu didn't work? could not find file. maybe instead of segfault catch that error? ask venkat
 // Use quatarions?
 //create vector of strings, create a scene
@@ -20,6 +25,7 @@
 //check how long it takes
 //try different configs
 //setObject vs createObject
+//how to detect if two trimeshes are stuck inside eachother
 /**********************************************/
 
 #include <ode/ode.h>
@@ -77,14 +83,32 @@ static chrono::steady_clock::time_point startTime, endTime;
 
 
 //***********SOME POSITION CONSTANTS**************
-const dReal center1[3] = {2,-2,6}; // 
-const dReal center2[3] = {2,0,6}; // 
-const dReal center3[3] = {-2,0,2}; //
-const dReal center4[3] = {0,0,6}; //
+const dReal center1[3] = {-2,0,3*0.63}; // 
+const dReal center2[3] = {2,0,0.45}; // 
+const dReal center3[3] = {-2,0,0.63}; //
+const dReal center4[3] = {0,0,4}; //
+const dReal center5[3] = {0,0,0.63}; //
+const dReal center6[3] = {0,-4,0.7}; //
+
+
+const dReal center1_2[3] = {1.0,1.0,3.0}; // length of edges
+const dReal center2_2[3] = {2.0,2.0,3.0}; // length of edges
+const dReal center3_2[3] = {3.0,3.0,3.0}; // length of edges
+const dReal center4_2[3] = {4.0,4.0,3.0}; // length of edges
 
 const dMatrix3 matrixStandard = { 1, 0, 0,
                                   0, 0, 0,
                                   0, 0, 0  };
+
+const dMatrix3 matrixSidewaysOriginal = { 0, 0, 1,
+                                  0, -1, 0,
+                                  1, 0, 0  };
+
+const dMatrix3 matrixSideways = { 0, 0, 1,
+                                  0, -1, 0,
+                                  1, 0, 0  };                                 
+
+
 
 //***********************************************
 
@@ -184,7 +208,7 @@ static void start()
 }
 
 
-static void inStaticEquilibrium(MyObject &object){
+static bool inStaticEquilibrium(MyObject &object){
 
     double startZ = object.center[2];
     double endZ = dBodyGetPosition(object.body)[2];
@@ -193,12 +217,14 @@ static void inStaticEquilibrium(MyObject &object){
     //cout << "THRESHHOLD : " << THRESHHOLD << " \n" << endl;
     //Check if object moved since initialization
     if ( (deltaZ) > THRESHHOLD){
+        return false;
         //cout << "FALSE: Not in static equilibrium" << endl;
     } else{ 
-      //  cout << "TRUE: Is in static equilibrium" << endl;
+        return true;
+        //cout << "TRUE: Is in static equilibrium" << endl;
     }
-    cout << "StartPosition: " << startZ << " " << endl;
-    cout << "EndPosition: " << endZ << " " << endl;
+    //cout << "StartPosition: " << startZ << " " << endl;
+    //cout << "EndPosition: " << endZ << " " << endl;
     cout << "delta Z: " << deltaZ << " " << endl;
 }
  
@@ -275,8 +301,8 @@ void createObject (MyObject &object, int number, const dReal* center, const dMat
   //gets the absolute bounding box
   dReal aabb[6];
   dGeomGetAABB (object.geom[0], aabb);
-  cout<<aabb[5]<<"\n";
-  dReal maxZ = aabb[5];
+  cout<<aabb[5]/2<<"\n";
+  dReal maxZ = aabb[5]/2;
 
   object.body = dBodyCreate (world);
   //set positions
@@ -439,14 +465,54 @@ static void simLoop (int pause)
   if (counter == 0){
      startTime = chrono::steady_clock::now();
   }
-  else if (counter == COUNT){ //now we want to check
-  //  cout<<"FALSE: Scene 1"<<endl; <<output the known Truth value  
-    inStaticEquilibrium(obj[0]); //feed it in the Zinital and Zfinal coordinates of Box4
-    //end chrono timer
-    endTime = chrono::steady_clock::now();
-    auto diff = endTime - startTime;
-    cout << chrono::duration <double, milli> (diff).count() << " ms\n" << endl;
+  else if (counter == COUNT){ 
+   cout<<"TRUE: Scene 1"<<endl; //<<output the known Truth value
+
+    for (int i=0; i<num; i++){ 
+       if (!inStaticEquilibrium(obj[i]) ){
+          cout << "FALSE: Not in static equilibrium" << endl;
+          break;        
+       } else{
+          cout << "TRUE: Is in static equilibrium" << endl;
+       }
+    } 
+
+    //set the new scene
+    setObject(obj[0], center1_2, matrixStandard);
+    setObject(obj[1], center2_2, matrixStandard);
+    setObject(obj[2], center3_2, matrixStandard);
+    setObject(obj[3], center4_2, matrixStandard);
   }
+
+  else if (counter == COUNT*2){
+    cout<<"FALSE: Scene 2"<<endl; //<<output the known Truth value
+    for (int i=0; i<num; i++){ 
+       if (!inStaticEquilibrium(obj[i]) ){
+          cout << "FALSE: Not in static equilibrium" << endl;
+          break;        
+       } else{
+          cout << "TRUE: Is in static equilibrium" << endl;
+       }
+    }
+    //end chrono timer
+  endTime = chrono::steady_clock::now();
+  auto diff = endTime - startTime;
+  cout << chrono::duration <double, milli> (diff).count() << " ms\n" << endl;    
+  }
+
+  
+
+
+  //print out the final rotation matrix
+  /*
+  if (counter == 400){
+    const dReal* rotation = dGeomGetRotation(obj[4].geom[0]);
+    cout<<"const dMatrix3 matrixMilk_CartonSideways = {"<<rotation[0]<<","<<rotation[1]<<","<<rotation[2]<<","<<endl;
+    cout<<"                         "<<rotation[3]<<","<<rotation[4]<<","<<rotation[5]<<","<<endl;
+    cout<<"                         "<<rotation[6]<<","<<rotation[7]<<","<<rotation[8]<<"};"<<endl;
+    
+  }
+  */
 
   counter ++;
 
@@ -572,10 +638,15 @@ int main (int argc, char **argv)
   createObject(obj[1], 10, center2, matrixStandard, "teacup.obj");
   num++;
   createObject(obj[2], 10, center3, matrixStandard, "red_mug.obj");
+  num++;
+  createObject(obj[3], 10, center5, matrixStandard, "red_mug.obj");
+  //num++;
+  //createObject(obj[4], 10, center6, matrixSideways, "milk_carton.obj");
+
   
 
   // run simulation
-  dsSimulationLoop (argc,argv,352,288,&fn);
+  dsSimulationLoop (argc,argv,1000,1000,&fn);
 
   dThreadingImplementationShutdownProcessing(threading);
   dThreadingFreeThreadPool(pool);
