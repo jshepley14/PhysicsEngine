@@ -11,20 +11,18 @@
 //try to print out final rotation matrix
 //need a metric of what is actually stable
 //ask venkat what the grid layout will be? should i only test discrete numbers?
-//feed isEquilibrium the array of objects
+//feed isEquilibrium just num and then it will go through the array?
 //find out the scale of the objects, should they be /1000 not /100?
 //turn off drawing function
 //see why pikachu didn't work? could not find file. maybe instead of segfault catch that error? ask venkat
 // Use quatarions?
 //create vector of strings, create a scene
 // object.rotation?  
-//put in the check for static equi. function
 //investigate the num++ thing and how to solve that
 //make a createScene function
 //find the right balance for friction
 //check how long it takes
 //try different configs
-//setObject vs createObject
 //how to detect if two trimeshes are stuck inside eachother
 /**********************************************/
 
@@ -68,7 +66,7 @@ using namespace std;
 //Some COUNT, TIMESTEP pairs: 6, 0.1  and 20, 0.05
 //static equilibrium constants
 static int counter = 0;          //iterator which will reach COUNT
-static int COUNT = 20;            //how long until we want to wait to check satic equlibrium?
+static int COUNT = 20; //20?            //how long until we want to wait to check satic equlibrium?
 static double THRESHHOLD = 0.1;  //how much movement is allowed
 //static double GRAVITY = -19.8;    
 //static double TIMESTEP = 0.02;    
@@ -232,6 +230,109 @@ static bool inStaticEquilibrium(MyObject &object){
 
 
 //To Do
+void setObject (MyObject &object, int number, char* filename){
+  int SCALE =100;
+  
+  //Load the file
+  objLoader *objData = new objLoader();
+	objData->load(filename);
+
+  object.IDnumber = number;
+  object.indCount = objData->faceCount;
+  object.vertCount = objData->vertexCount;
+
+
+  //Make 2D vector of indices for drawing 
+  int indexCount = object.indCount; 
+	for(int i=0; i<indexCount; i++)
+	{	vector<int> temp_vec;
+		temp_vec.push_back((objData->faceList[i])->vertex_index[0]);
+		temp_vec.push_back((objData->faceList[i])->vertex_index[1]);
+		temp_vec.push_back((objData->faceList[i])->vertex_index[2]);
+		object.indexDrawVec.push_back(temp_vec);
+	}
+
+  //Make 1D vector of indices for geometry
+  for(int i=0; i< indexCount; i++)
+  {	
+    object.indexGeomVec.push_back((objData->faceList[i])->vertex_index[0]);
+    object.indexGeomVec.push_back((objData->faceList[i])->vertex_index[1]);
+    object.indexGeomVec.push_back((objData->faceList[i])->vertex_index[2]);   
+  }
+
+  //Make 1D vector of vertices for drawing
+  int vertCount =  object.vertCount;
+	for(int i=0; i< vertCount ; i++){
+		object.vertexDrawVec.push_back( objData->vertexList[i]->e[0]/SCALE );
+		object.vertexDrawVec.push_back( objData->vertexList[i]->e[1]/SCALE );
+		object.vertexDrawVec.push_back( objData->vertexList[i]->e[2]/SCALE );	
+	}
+  
+  //Make 1D vector of vertices for geometry
+  for(int i=0; i< vertCount ; i++){
+		object.vertexGeomVec.push_back( objData->vertexList[i]->e[0]/SCALE );
+		object.vertexGeomVec.push_back( objData->vertexList[i]->e[1]/SCALE );
+		object.vertexGeomVec.push_back( objData->vertexList[i]->e[2]/SCALE );	
+	}
+
+} 
+
+  
+  //cout<<object.center[0]<<","<< object.center[1]<<","<< object.center[2]<<endl;
+
+void makeObject (MyObject &object, const dReal* center, const dMatrix3 R){
+    int i,j,k;
+    dMass m;
+
+    //build Trimesh geom
+  dTriMeshDataID new_tmdata = dGeomTriMeshDataCreate();
+  dGeomTriMeshDataBuildSingle(new_tmdata, object.vertexGeomVec.data(), 3 * sizeof(float), 
+	     object.vertCount, (int*)object.indexGeomVec.data(), object.indCount*3, 3 * sizeof(int));
+  object.geom[0] = dCreateTriMesh(space, new_tmdata, 0, 0, 0);
+  dGeomSetData(object.geom[0], new_tmdata);        
+  dMassSetTrimesh( &m, DENSITY, object.geom[0] );
+
+  //gets the absolute bounding box
+  dReal aabb[6];
+  dGeomGetAABB (object.geom[0], aabb);
+  cout<<aabb[5]/2<<"\n";
+  dReal maxZ = aabb[5]/2;
+
+  object.body = dBodyCreate (world);
+  //set positions
+  //dBodySetPosition (object.body, object.center[0], object.center[1], object.center[2]);
+  //dBodySetPosition (object.body, center[0], center[1], center[2]);
+
+  object.center[0] = center[0];
+  object.center[1] = center[1];
+  object.center[2] = center[2];
+  dBodySetPosition (object.body, object.center[0], object.center[1], object.center[2]);
+  //dBodySetPosition (object.body, center[0], center[1], maxZ/2);
+  //dRFromAxisAndAngle (R,0,0,0,0); //0,0,1, dRandReal()*10.0-5.0);
+  dBodySetRotation (object.body,R);
+  dBodySetData (object.body,(void*)(size_t)i);
+
+
+  //set body loop
+  for (k=0; k < GPB; k++){
+      if (object.geom[k]){
+          dGeomSetBody(object.geom[k],object.body);
+      }
+  }
+  
+  
+  //dGeomSetPosition(object.geom[0], m.c[0], m.c[1], m.c[2]);  <-- could be used for later? idk
+  dGeomSetOffsetPosition(object.geom[0], -m.c[0],-m.c[1], -m.c[2]);
+  dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]); 
+  dBodySetMass(object.body,&m);
+}
+
+
+
+
+
+
+//To Do
 void createObject (MyObject &object, int number, const dReal* center, const dMatrix3 R, char* filename){
   int SCALE =100;
   
@@ -293,7 +394,7 @@ void createObject (MyObject &object, int number, const dReal* center, const dMat
     //build Trimesh geom
   dTriMeshDataID new_tmdata = dGeomTriMeshDataCreate();
   dGeomTriMeshDataBuildSingle(new_tmdata, object.vertexGeomVec.data(), 3 * sizeof(float), 
-	     object.vertCount, (int*)object.indexGeomVec.data(), indexCount*3, 3 * sizeof(int));
+	     object.vertCount, (int*)object.indexGeomVec.data(), object.indCount*3, 3 * sizeof(int));
   object.geom[0] = dCreateTriMesh(space, new_tmdata, 0, 0, 0);
   dGeomSetData(object.geom[0], new_tmdata);        
   dMassSetTrimesh( &m, DENSITY, object.geom[0] );
@@ -334,7 +435,11 @@ void createObject (MyObject &object, int number, const dReal* center, const dMat
 }
 
 
-void setObject(MyObject &object, const dReal* center, const dMatrix3 R ){
+
+
+
+
+void translateObject(MyObject &object, const dReal* center, const dMatrix3 R ){
       dBodySetPosition (object.body, center[0], center[1], 4);
       dBodySetRotation (object.body, R);
       dBodySetLinearVel(object.body, 0, 0, 0);
@@ -356,7 +461,7 @@ static void command (int cmd)
 
     if (cmd == 'n') {
       //testing this
-      setObject(obj[0], center1, matrixStandard);
+      translateObject(obj[0], center1, matrixStandard);
     }
 
 
@@ -464,7 +569,14 @@ static void simLoop (int pause)
 
   if (counter == 0){
      startTime = chrono::steady_clock::now();
+     
+      //set the new scene     
+      makeObject(obj[0], center1, matrixStandard);     
+      makeObject(obj[1], center2, matrixStandard);    
+      makeObject(obj[2], center3, matrixStandard);    
+      makeObject(obj[3], center5, matrixStandard);     
   }
+
   else if (counter == COUNT){ 
    cout<<"TRUE: Scene 1"<<endl; //<<output the known Truth value
 
@@ -477,11 +589,16 @@ static void simLoop (int pause)
        }
     } 
 
+    
     //set the new scene
-    setObject(obj[0], center1_2, matrixStandard);
-    setObject(obj[1], center2_2, matrixStandard);
-    setObject(obj[2], center3_2, matrixStandard);
-    setObject(obj[3], center4_2, matrixStandard);
+    
+
+    translateObject(obj[0], center1_2, matrixStandard);
+    translateObject(obj[1], center2_2, matrixStandard);
+    translateObject(obj[2], center3_2, matrixStandard);
+    translateObject(obj[3], center4_2, matrixStandard);
+    
+    
   }
 
   else if (counter == COUNT*2){
@@ -494,13 +611,24 @@ static void simLoop (int pause)
           cout << "TRUE: Is in static equilibrium" << endl;
        }
     }
+
+    //destroy the scene
+    int k;
+    for (int i=0; i<num; i++){
+        dBodyDestroy (obj[i].body);
+        for (k=0; k < GPB; k++) {
+            if (obj[i].geom[k]) dGeomDestroy (obj[i].geom[k]);
+        }
+        memset (&obj[i],0,sizeof(obj[i]));
+    }
+
+    //counter = 0;
     //end chrono timer
   endTime = chrono::steady_clock::now();
   auto diff = endTime - startTime;
   cout << chrono::duration <double, milli> (diff).count() << " ms\n" << endl;    
   }
 
-  
 
 
   //print out the final rotation matrix
@@ -631,6 +759,7 @@ int main (int argc, char **argv)
   dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
 
   //create objects
+  /*
   num++;
   int i = 0;
   createObject(obj[i], i, center1, matrixStandard, "red_mug.obj");
@@ -640,9 +769,18 @@ int main (int argc, char **argv)
   createObject(obj[2], 10, center3, matrixStandard, "red_mug.obj");
   num++;
   createObject(obj[3], 10, center5, matrixStandard, "red_mug.obj");
+  */
   //num++;
   //createObject(obj[4], 10, center6, matrixSideways, "milk_carton.obj");
-
+  num++;
+  int i = 0;
+  setObject(obj[i], i,  "red_mug.obj");
+  num++;
+  setObject(obj[1], 10,  "teacup.obj");
+  num++;
+  setObject(obj[2], 10,  "red_mug.obj");
+  num++;
+  setObject(obj[3], 10,  "red_mug.obj");
   
 
   // run simulation
