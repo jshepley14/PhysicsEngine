@@ -5,6 +5,9 @@
 //
 /****************************************************
 //                   To Do
+//make only translations happen
+//do venkats pseudo code
+//
 //Venkat: what the grid layout will be? should i only test discrete numbers?
 //Venkat: how do I call isStable() in the simloop?
 //Venkat: figure out affine3d
@@ -624,31 +627,34 @@ static void simLoop (int pause)
 
   if (counter == 1){  
      num = 4;
-      //set the new scene     
-      makeObject(obj[0], center1, matrixStandard);     
-      makeObject(obj[1], center2, matrixStandard);    
-      makeObject(obj[2], center3, matrixStandard);    
-      makeObject(obj[3], center5, matrixStandard);     
+      
+     //set the new scene by translating
+    translateObject(obj[0], center1_2, matrixStandard);
+    translateObject(obj[1], center2_2, matrixStandard);
+    translateObject(obj[2], center3_2, matrixStandard);
+    translateObject(obj[3], center4_2, matrixStandard);
+
+       
   }
 
   else if (counter == COUNT){
     //dsStop(); 
     //cout<<"TRUE: Scene 1"<<endl; //output the known Truth value
     isValidScene(num);           //output program's Truth value
-    
-    //set the new scene by translating
-    translateObject(obj[0], center1_2, matrixStandard);
-    translateObject(obj[1], center2_2, matrixStandard);
-    translateObject(obj[2], center3_2, matrixStandard);
-    translateObject(obj[3], center4_2, matrixStandard);  
+        //set the new scene by translating
+      translateObject(obj[0], center1, matrixStandard);
+      translateObject(obj[1], center2, matrixStandard);
+      translateObject(obj[2], center3, matrixStandard);
+      translateObject(obj[3], center5, matrixStandard);
+      
   }
 
   else if (counter == COUNT*2){
     //cout<<"FALSE: Scene 2"<<endl; //<<output the known Truth value
     isValidScene(num);
     
-    destroyObjects(num);
-    num=num-num;
+    //destroyObjects(num);
+    //num=num-num;
     //cout<<"Num: "<<num<<"\n";
 
     //reset the loop
@@ -805,26 +811,18 @@ int main (int argc, char **argv)
   // dWorldSetStepIslandsProcessingMaxThreadCount(world, 1);
   dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
 
-  //create objects
-  /*
-  num++;
-  int i = 0;
-  createObject(obj[i], i, center1, matrixStandard, "red_mug.obj");
-  num++;
-  createObject(obj[1], 10, center2, matrixStandard, "teacup.obj");
-  num++;
-  createObject(obj[2], 10, center3, matrixStandard, "red_mug.obj");
-  num++;
-  createObject(obj[3], 10, center5, matrixStandard, "red_mug.obj");
-  */
-  //num++;
-  //createObject(obj[4], 10, center6, matrixSideways, "milk_carton.obj");
+  
   
   int i = 0;
   setObject(obj[i], i,  "red_mug.obj");
   setObject(obj[1], 10,  "teacup.obj");
   setObject(obj[2], 10,  "red_mug.obj");
   setObject(obj[3], 10,  "red_mug.obj");
+  //set the new scene     
+  makeObject(obj[0], center1, matrixStandard);     
+  makeObject(obj[1], center2, matrixStandard);    
+  makeObject(obj[2], center3, matrixStandard);    
+  makeObject(obj[3], center5, matrixStandard);
   
 
   // run simulation
