@@ -58,7 +58,7 @@
 #define GPB 3			// maximum number of geometries per body
 #define MAX_CONTACTS 64		// maximum number of contact points per body
 
-//#define DRAW  //used to switch on or off the drawing of the scene
+#define DRAW  //used to switch on or off the drawing of the scene
 
 using namespace std;
 
@@ -247,9 +247,9 @@ static bool isValidScene(int num){
        } 
     } 
     if (stable == true){
-      //cout << "TRUE: Is in static equilibrium" << endl;
+      cout << "TRUE: Is in static equilibrium" << endl;
     } else{
-      //cout << "FALSE: Not in static equilibrium" << endl;
+      cout << "FALSE: Not in static equilibrium" << endl;
     }
 }
 
@@ -606,66 +606,20 @@ void setCurrentTransform(dGeomID geom)
 static void simLoop (int pause)
 {
 
+
+
+
   if (counter == 0){
-
-    startTime = chrono::steady_clock::now();
-  }
-
-  if( GlobalCounter == NUMBERofSCENES/2 ){
-    GlobalCounter = 11;
-    //cout<<"STOP!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n";
-    counter=10000;
-    //cout<<"Counter:  "<<counter<<"\n";
-    //end chrono timer
-    endTime = chrono::steady_clock::now();
-    auto diff = endTime - startTime;
-    cout <<"Time: "<< chrono::duration <double, milli> (diff).count() << " ms" << endl;
-    cout<< "Scenes: "<<NUMBERofSCENES<<endl;
-    cout<<" Time per Scene: "<<(chrono::duration <double, milli> (diff).count())/NUMBERofSCENES<<"ms"<<endl;
-    cout<<"ctrl C to quit";
-  }
-
-  if (counter == 1){  
-     num = 4;
-      
-     //set the new scene by translating
-    translateObject(obj[0], center1_2, matrixStandard);
-    translateObject(obj[1], center2_2, matrixStandard);
-    translateObject(obj[2], center3_2, matrixStandard);
-    translateObject(obj[3], center4_2, matrixStandard);
-
-       
+      num = 4;    
+      //set the new scene by translating
+      translateObject(obj[0], center1_2, matrixStandard);
+      translateObject(obj[1], center2_2, matrixStandard);
+      translateObject(obj[2], center3_2, matrixStandard);
+      translateObject(obj[3], center4_2, matrixStandard);      
   }
 
   else if (counter == COUNT){
-    //dsStop(); 
-    //cout<<"TRUE: Scene 1"<<endl; //output the known Truth value
-    isValidScene(num);           //output program's Truth value
-        //set the new scene by translating
-      translateObject(obj[0], center1, matrixStandard);
-      translateObject(obj[1], center2, matrixStandard);
-      translateObject(obj[2], center3, matrixStandard);
-      translateObject(obj[3], center5, matrixStandard);
-      
-  }
-
-  else if (counter == COUNT*2){
-    //cout<<"FALSE: Scene 2"<<endl; //<<output the known Truth value
-    isValidScene(num);
-    
-    //destroyObjects(num);
-    //num=num-num;
-    //cout<<"Num: "<<num<<"\n";
-
-    //reset the loop
-    counter = 0;
-    /*
-    //end chrono timer
-    endTime = chrono::steady_clock::now();
-    auto diff = endTime - startTime;
-    cout << chrono::duration <double, milli> (diff).count() << " ms\n" << endl;
-    */    
-    GlobalCounter++;
+      isValidScene(num);           //output program's Truth value    
   }
   counter ++;
 
@@ -827,9 +781,20 @@ int main (int argc, char **argv)
 
   // run simulation
   #ifdef DRAW
-  dsSimulationLoop (argc,argv,1000,1000,&fn);
+  //int drawSTEP = 100;
+  //for(int i = 0; i <= drawSTEP; i++) {
+    dsSimulationLoop (argc,argv,1000,1000,&fn);
+      translateObject(obj[0], center1, matrixStandard);
+      translateObject(obj[1], center2, matrixStandard);
+      translateObject(obj[2], center3, matrixStandard);
+      translateObject(obj[3], center5, matrixStandard);
+    dsSimulationLoop (argc,argv,1000,1000,&fn);
+  //}
   #else
-  while (1) {
+
+ //need to fix
+  int STEP = 100;
+  for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
   #endif
