@@ -5,26 +5,20 @@
 //
 /****************************************************
 //                   To Do
-//make only translations happen
-//do venkats pseudo code
+//make a setScene() function
+//how to detect if two trimeshes are stuck inside eachother?
+//
 //
 //Venkat: what the grid layout will be? should i only test discrete numbers?
-//Venkat: how do I call isStable() in the simloop?
 //Venkat: figure out affine3d
-//see how long it takes to translate vs create and destroy
 //
 //try to print out final rotation matrix
-//need a metric of what is actually stable
-//find out the scale of the objects, should they be /1000 not /100?
+//need a metric of what is actually stable, ground truth test data
 //see why pikachu didn't work? could not find file. maybe instead of segfault catch that error? ask venkat
-// Use quatarions?
 //create vector of strings, create a scene
 // object.rotation?  
 //remember the importance of num++ or num in general, creating and deleting
-//make a createScene function
 //find the right balance for friction
-//try different configs
-//how to detect if two trimeshes are stuck inside eachother
 /**********************************************/
 
 #include <ode/ode.h>
@@ -67,7 +61,8 @@ using namespace std;
 //static equilibrium constants
 static int GlobalCounter = 0;
 static int counter = 0;          //iterator which will reach COUNT
-static int COUNT = 20; //20?            //how long until we want to wait to check satic equlibrium?
+static int dsSTEP=100;
+static int STEP = 20; //20?            //how long until we want to wait to check satic equlibrium?
 static double THRESHHOLD = 0.1;  //how much movement is allowed
 //static double GRAVITY = -19.8;    
 static double TIMESTEP = 0.05;
@@ -609,18 +604,10 @@ static void simLoop (int pause)
 
 
 
-  if (counter == 0){
-      num = 4;    
-      //set the new scene by translating
-      translateObject(obj[0], center1_2, matrixStandard);
-      translateObject(obj[1], center2_2, matrixStandard);
-      translateObject(obj[2], center3_2, matrixStandard);
-      translateObject(obj[3], center4_2, matrixStandard);      
+  if (counter == dsSTEP){
+      dsStop();             
   }
 
-  else if (counter == COUNT){
-      isValidScene(num);           //output program's Truth value    
-  }
   counter ++;
 
 
@@ -766,7 +753,11 @@ int main (int argc, char **argv)
   dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
 
   
-  
+  /*
+  / void setModels(std:vector<string> modelnames, std:vector<string> filepath);  
+  */
+ 
+  num = 4;   //number of elements.  must specify!!!!!
   int i = 0;
   setObject(obj[i], i,  "red_mug.obj");
   setObject(obj[1], 10,  "teacup.obj");
@@ -777,27 +768,60 @@ int main (int argc, char **argv)
   makeObject(obj[1], center2, matrixStandard);    
   makeObject(obj[2], center3, matrixStandard);    
   makeObject(obj[3], center5, matrixStandard);
+
+  
   
 
-  // run simulation
+ 
+  /*
+  /   bool isStable(std:vector<string> model_IDs, std:vector<Eigen:: Affine3d> model-poses)
+  */
+  
+  //set the scene
+  translateObject(obj[0], center1_2, matrixStandard);
+  translateObject(obj[1], center2_2, matrixStandard);
+  translateObject(obj[2], center3_2, matrixStandard);
+  translateObject(obj[3], center4_2, matrixStandard);
+  //run simulation
   #ifdef DRAW
-  //int drawSTEP = 100;
-  //for(int i = 0; i <= drawSTEP; i++) {
-    dsSimulationLoop (argc,argv,1000,1000,&fn);
-      translateObject(obj[0], center1, matrixStandard);
-      translateObject(obj[1], center2, matrixStandard);
-      translateObject(obj[2], center3, matrixStandard);
-      translateObject(obj[3], center5, matrixStandard);
-    dsSimulationLoop (argc,argv,1000,1000,&fn);
-  //}
+  counter=0;
+  dsSTEP=100;
+  dsSimulationLoop (argc,argv,1000,1000,&fn);
   #else
-
- //need to fix
-  int STEP = 100;
+  STEP = 100;
   for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
   #endif
+  //check if valid
+  isValidScene(num);
+
+
+
+
+  //set the scene
+  translateObject(obj[0], center1, matrixStandard);
+  translateObject(obj[1], center2, matrixStandard);
+  translateObject(obj[2], center3, matrixStandard);
+  translateObject(obj[3], center5, matrixStandard);
+  //run simulation
+  #ifdef DRAW
+  counter=0;
+  dsSTEP=100;
+  dsSimulationLoop (argc,argv,1000,1000,&fn);
+  #else
+  STEP = 100;
+  for(int i = 0; i <= STEP; i++) {
+    simLoop(0);
+  }
+  #endif
+  //check if valid
+  isValidScene(num);
+
+
+
+
+
 
   dThreadingImplementationShutdownProcessing(threading);
   dThreadingFreeThreadPool(pool);
