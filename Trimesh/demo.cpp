@@ -7,7 +7,7 @@
 //                   To Do
 //make a setScene() function
 //how to detect if two trimeshes are stuck inside eachother?
-//
+// Again, test how long it will take to check 1000 scenes
 //
 //Venkat: what the grid layout will be? should i only test discrete numbers?
 //Venkat: figure out affine3d
@@ -52,7 +52,7 @@
 #define GPB 3			// maximum number of geometries per body
 #define MAX_CONTACTS 64		// maximum number of contact points per body
 
-#define DRAW  //used to switch on or off the drawing of the scene
+//#define DRAW  //used to switch on or off the drawing of the scene
 
 using namespace std;
 
@@ -75,7 +75,6 @@ static double TIMESTEP = 0.05;
 //timer variables
 //need to add -std=c++11 right after g++ to compile
 static chrono::steady_clock::time_point startTime, endTime;
-static int NUMBERofSCENES=1000;
 
 
 //***********SOME POSITION CONSTANTS**************
@@ -200,7 +199,6 @@ static void start()
   static float xyz[3]={-0.0559,-8.2456,6.0500};
   static float hpr[3]= { 89.0000,-25.0000,0.0000};
   dsSetViewpoint (xyz,hpr);
-  printf ("To drop another object, press j:\n");
 }
 
 
@@ -242,9 +240,9 @@ static bool isValidScene(int num){
        } 
     } 
     if (stable == true){
-      cout << "TRUE: Is in static equilibrium" << endl;
+      //cout << "TRUE: Is in static equilibrium" << endl;
     } else{
-      cout << "FALSE: Not in static equilibrium" << endl;
+      //cout << "FALSE: Not in static equilibrium" << endl;
     }
 }
 
@@ -311,7 +309,7 @@ void setObject (MyObject &object, int number, char* filename){
   
   //cout<<object.center[0]<<","<< object.center[1]<<","<< object.center[2]<<endl;
 
-void makeObject (MyObject &object, const dReal* center, const dMatrix3 R){
+void makeObject (MyObject &object){
     int i,j,k;
     dMass m;
 
@@ -330,17 +328,15 @@ void makeObject (MyObject &object, const dReal* center, const dMatrix3 R){
   dReal maxZ = aabb[5]/2;
 
   object.body = dBodyCreate (world);
+  
   //set positions
   //dBodySetPosition (object.body, object.center[0], object.center[1], object.center[2]);
   //dBodySetPosition (object.body, center[0], center[1], center[2]);
-
-  object.center[0] = center[0];
-  object.center[1] = center[1];
-  object.center[2] = center[2];
-  dBodySetPosition (object.body, object.center[0], object.center[1], object.center[2]);
-  //dBodySetPosition (object.body, center[0], center[1], maxZ/2);
-  //dRFromAxisAndAngle (R,0,0,0,0); //0,0,1, dRandReal()*10.0-5.0);
-  dBodySetRotation (object.body,R);
+  //dBodySetPosition (object.body, object.center[0], object.center[1], object.center[2]);
+  //dBodySetRotation (object.body,R);
+  //~~~dBodySetPosition (object.body, center[0], center[1], maxZ/2);
+  //~~~dRFromAxisAndAngle (R,0,0,0,0); //0,0,1, dRandReal()*10.0-5.0);
+  
   dBodySetData (object.body,(void*)(size_t)i);
 
 
@@ -350,12 +346,12 @@ void makeObject (MyObject &object, const dReal* center, const dMatrix3 R){
           dGeomSetBody(object.geom[k],object.body);
       }
   }
-  
-  
+   
   //dGeomSetPosition(object.geom[0], m.c[0], m.c[1], m.c[2]);  <-- could be used for later? idk
   dGeomSetOffsetPosition(object.geom[0], -m.c[0],-m.c[1], -m.c[2]);
   dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]); 
   dBodySetMass(object.body,&m);
+
 }
 
 
@@ -764,10 +760,10 @@ int main (int argc, char **argv)
   setObject(obj[2], 10,  "red_mug.obj");
   setObject(obj[3], 10,  "red_mug.obj");
   //set the new scene     
-  makeObject(obj[0], center1, matrixStandard);     
-  makeObject(obj[1], center2, matrixStandard);    
-  makeObject(obj[2], center3, matrixStandard);    
-  makeObject(obj[3], center5, matrixStandard);
+  makeObject(obj[0]);     
+  makeObject(obj[1]);    
+  makeObject(obj[2]);    
+  makeObject(obj[3]);
 
   
   
@@ -776,7 +772,13 @@ int main (int argc, char **argv)
   /*
   /   bool isStable(std:vector<string> model_IDs, std:vector<Eigen:: Affine3d> model-poses)
   */
-  
+  int NUMBERofSCENES=1000;
+  int SCENESperLOOP=1;
+  int NUMBERofLOOPS = NUMBERofSCENES/SCENESperLOOP;
+  startTime = chrono::steady_clock::now();
+  for (int i =0; i <= NUMBERofLOOPS; i++) {
+
+  /*
   //set the scene
   translateObject(obj[0], center1_2, matrixStandard);
   translateObject(obj[1], center2_2, matrixStandard);
@@ -785,10 +787,30 @@ int main (int argc, char **argv)
   //run simulation
   #ifdef DRAW
   counter=0;
-  dsSTEP=100;
+  dsSTEP=20;
   dsSimulationLoop (argc,argv,1000,1000,&fn);
   #else
-  STEP = 100;
+  STEP = 20;
+  for(int i = 0; i <= STEP; i++) {
+    simLoop(0);
+  }
+  #endif
+  //check if valid
+  isValidScene(num);
+  */
+
+  //set the scene
+  translateObject(obj[0], center1, matrixStandard);
+  translateObject(obj[1], center2, matrixStandard);
+  translateObject(obj[2], center3, matrixStandard);
+  translateObject(obj[3], center5, matrixStandard);
+  //run simulation
+  #ifdef DRAW
+  counter=0;
+  dsSTEP=20;
+  dsSimulationLoop (argc,argv,1000,1000,&fn);
+  #else
+  STEP = 20;
   for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
@@ -798,7 +820,15 @@ int main (int argc, char **argv)
 
 
 
+  }
 
+  endTime = chrono::steady_clock::now();
+  auto diff = endTime - startTime;
+  cout <<"Time: "<< chrono::duration <double, milli> (diff).count() << " ms" << endl;
+  cout<< "Scenes: "<<NUMBERofSCENES<<endl;
+  cout<<" Time per Scene: "<<(chrono::duration <double, milli> (diff).count())/NUMBERofSCENES<<"ms"<<endl;
+
+  /*
   //set the scene
   translateObject(obj[0], center1, matrixStandard);
   translateObject(obj[1], center2, matrixStandard);
@@ -817,7 +847,7 @@ int main (int argc, char **argv)
   #endif
   //check if valid
   isValidScene(num);
-
+ */
 
 
 
