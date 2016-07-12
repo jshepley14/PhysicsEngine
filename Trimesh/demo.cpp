@@ -112,6 +112,52 @@ const dReal center30[3] = {0,0, 1.1};
 const dReal center31[3] = {0,0, 2.1};
 
 
+const dReal center50[3] = {0,1, 0.44};
+const dReal center51[3] = {0,2, 0.44};
+const dReal center52[3] = {0,3, 0.44};
+const dReal center53[3] = {0,4, 0.44};
+const dReal center54[3] = {0,5, 0.44};
+const dReal center55[3] = {0,6, 0.44};
+const dReal center56[3] = {0,7, 0.44};
+const dReal center57[3] = {0,8, 0.44};
+const dReal center58[3] = {0,9, 0.44};
+const dReal center59[3] = {0,10, 0.44};
+const dReal center60[3] = {2,0, 0.44};
+const dReal center61[3] = {2,1, 0.44};
+const dReal center62[3] = {2,2, 0.44};
+const dReal center63[3] = {2,3, 0.44};
+const dReal center64[3] = {2,4, 0.44};
+const dReal center65[3] = {2,5, 0.44};
+const dReal center66[3] = {2,6, 0.44};
+const dReal center67[3] = {2,7, 0.44};
+const dReal center68[3] = {2,8, 0.44};
+const dReal center69[3] = {2,9, 0.44};
+
+const dReal center50x[3] = {3,1, 0.44};
+const dReal center51x[3] = {3,2, 0.44};
+const dReal center52x[3] = {3,3, 0.44};
+const dReal center53x[3] = {3,4, 0.44};
+const dReal center54x[3] = {3,5, 0.44};
+const dReal center55x[3] = {3,6, 0.44};
+const dReal center56x[3] = {3,7, 0.44};
+const dReal center57x[3] = {3,8, 0.44};
+const dReal center58x[3] = {3,9, 0.44};
+const dReal center59x[3] = {3,10, 0.44};
+const dReal center60x[3] = {4,0, 0.44};
+const dReal center61x[3] = {4,1, 0.44};
+const dReal center62x[3] = {4,2, 0.44};
+const dReal center63x[3] = {4,3, 0.44};
+const dReal center64x[3] = {4,4, 0.44};
+const dReal center65x[3] = {4,5, 0.44};
+const dReal center66x[3] = {4,6, 0.44};
+const dReal center67x[3] = {4,7, 0.44};
+const dReal center68x[3] = {4,8, 0.44};
+const dReal center69x[3] = {4,9, 0.44};
+
+
+
+
+
 const dMatrix3 matrixStandard = { 1, 0, 0,
                                   0, 0, 0,
                                   0, 0, 0  };
@@ -791,17 +837,39 @@ int main (int argc, char **argv)
   / void setModels(std:vector<string> modelnames, std:vector<string> filepath);  
   */
  
-  num = 4;   //number of elements.  must specify!!!!!
+  num = 14;   //number of elements.  must specify!!!!!
   int i = 0;
-  setObject(obj[i], i,  "red_mug.obj");
-  setObject(obj[1], 10,  "teacup.obj");
-  setObject(obj[2], 10,  "red_mug.obj");
-  setObject(obj[3], 10,  "milk_carton.obj");
+  setObject(obj[i], i,  "teacup.obj");
+  setObject(obj[1], i,  "teacup.obj");
+  setObject(obj[2], i,  "teacup.obj");
+  setObject(obj[3], i,  "teacup.obj");
+  setObject(obj[4], i,  "teacup.obj");
+  setObject(obj[5], i,  "teacup.obj");
+  setObject(obj[6], i,  "teacup.obj");
+  setObject(obj[7], i,  "teacup.obj");
+  setObject(obj[8], i,  "teacup.obj");
+  setObject(obj[9], i,  "teacup.obj");
+  setObject(obj[10], i,  "teacup.obj");
+  setObject(obj[11], i,  "teacup.obj");
+  setObject(obj[12], i,  "teacup.obj");
+  setObject(obj[13], i,  "teacup.obj");
+  
   //set the new scene     
-  makeObject(obj[0]);     
-  makeObject(obj[1]);    
-  makeObject(obj[2]);    
+  makeObject(obj[0]);
+  makeObject(obj[1]);     
+  makeObject(obj[2]);
   makeObject(obj[3]);
+  makeObject(obj[4]);
+  makeObject(obj[5]);
+  makeObject(obj[6]);
+  makeObject(obj[7]);
+  makeObject(obj[8]);
+  makeObject(obj[9]);
+  makeObject(obj[10]);
+  makeObject(obj[11]);
+  makeObject(obj[12]);
+  makeObject(obj[13]);
+  
 
   
   
@@ -811,20 +879,32 @@ int main (int argc, char **argv)
   /   bool isStable(std:vector<string> model_IDs, std:vector<Eigen:: Affine3d> model-poses)
   */
 
-  STEP = 30;
+  STEP = 30; 
 
-  int NUMBERofSCENES=1001;
-  int SCENESperLOOP=7;
+  int NUMBERofSCENES=1000;
+  int SCENESperLOOP=2;
   int NUMBERofLOOPS = NUMBERofSCENES/SCENESperLOOP;
   startTime = chrono::steady_clock::now();
+
   for (int i =0; i < NUMBERofLOOPS; i++) {
 
 
   //set the scene
-  translateObject(obj[0], center02, matrixStandard);
-  translateObject(obj[1], center12, matrixStandard);
-  translateObject(obj[2], center21, matrixStandard);
-  translateObject(obj[3], center30, matrixMilk_CartonSideways);
+  translateObject(obj[0], center50, matrixStandard);
+  translateObject(obj[1], center51, matrixStandard);
+  translateObject(obj[2], center52, matrixStandard);
+  translateObject(obj[3], center53, matrixStandard);
+  translateObject(obj[4], center54, matrixStandard);
+  translateObject(obj[5], center55, matrixStandard);
+  translateObject(obj[6], center56, matrixStandard);
+  translateObject(obj[7], center57, matrixStandard);
+  translateObject(obj[8], center58, matrixStandard);
+  translateObject(obj[9], center59, matrixStandard);
+  translateObject(obj[10], center60, matrixStandard);
+  translateObject(obj[11], center61, matrixStandard);
+  translateObject(obj[12], center62, matrixStandard);
+  translateObject(obj[13], center63, matrixStandard);
+
   //run simulation
   #ifdef DRAW
   counter=0;
@@ -840,11 +920,21 @@ int main (int argc, char **argv)
   //cout<<"Scene 1: ";
   isValidScene(num);
 
-  //set the scene
-  translateObject(obj[0], center02, matrixStandard);
-  translateObject(obj[1], center10, matrixStandard);
-  translateObject(obj[2], center20, matrixStandard);
-  translateObject(obj[3], center30, matrixMilk_CartonSideways);
+    //set the scene
+  translateObject(obj[0], center50x, matrixStandard);
+  translateObject(obj[1], center51x, matrixStandard);
+  translateObject(obj[2], center52x, matrixStandard);
+  translateObject(obj[3], center53x, matrixStandard);
+  translateObject(obj[4], center54x, matrixStandard);
+  translateObject(obj[5], center55x, matrixStandard);
+  translateObject(obj[6], center56x, matrixStandard);
+  translateObject(obj[7], center57x, matrixStandard);
+  translateObject(obj[8], center58x, matrixStandard);
+  translateObject(obj[9], center59x, matrixStandard);
+  translateObject(obj[10], center60x, matrixStandard);
+  translateObject(obj[11], center61x, matrixStandard);
+  translateObject(obj[12], center62x, matrixStandard);
+  translateObject(obj[13], center63x, matrixStandard);
   //run simulation
   #ifdef DRAW
   counter=0;
@@ -857,120 +947,12 @@ int main (int argc, char **argv)
   }
   #endif
   //check if valid
-  //cout<<"Scene 2: ";
-  isValidScene(num);
-  
-
-  //set the scene
-  translateObject(obj[0], center05, matrixLean70);
-  translateObject(obj[1], center11, matrixStandard);
-  translateObject(obj[2], center20, matrixStandard);
-  translateObject(obj[3], center30, matrixMilk_CartonSideways);
-  //run simulation
-  #ifdef DRAW
-  counter=0;
-  dsSTEP=200;
-  dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
-  #else
-  //STEP = 140;
-  for(int i = 0; i <= STEP; i++) {
-    simLoop(0);
-  }
-  #endif
-  //check if valid
-  //cout<<"Scene 3: ";
+  //cout<<"Scene 1: ";
   isValidScene(num);
 
   
-
-  
-  //set the scene
-  translateObject(obj[0], center03, matrixLean30);
-  translateObject(obj[1], center11, matrixStandard);
-  translateObject(obj[2], center20, matrixStandard);
-  translateObject(obj[3], center30, matrixStandard);
-  //run simulation
-  #ifdef DRAW
-  counter=0;
-  dsSTEP=200;
-  dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
-  #else
-  //STEP = 140;
-  for(int i = 0; i <= STEP; i++) {
-    simLoop(0);
-  }
-  #endif
-  //check if valid
-  //cout<<"Scene 4: ";
-  isValidScene(num);
-
-  
-
-  //set the scene
-  translateObject(obj[0], center01, matrixStandard);
-  translateObject(obj[1], center10, matrixStandard);
-  translateObject(obj[2], center20, matrixStandard);
-  translateObject(obj[3], center30, matrixMilk_CartonSideways);
-  //run simulation
-  #ifdef DRAW
-  counter=0;
-  dsSTEP=200;
-  dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
-  #else
-  //STEP = 30;
-  for(int i = 0; i <= STEP; i++) {
-    simLoop(0);
-  }
-  #endif
-  //check if valid
-  //cout<<"Scene 5: ";
-  isValidScene(num);
-
- 
-   //set the scene
-  translateObject(obj[0], center00, matrixStandard);
-  translateObject(obj[1], center10, matrixStandard);
-  translateObject(obj[2], center20, matrixStandard);
-  translateObject(obj[3], center30, matrixStandard);
-  //run simulation
-  #ifdef DRAW
-  counter=0;
-  dsSTEP=200;
-  dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
-  #else
-  //STEP = 30;
-  for(int i = 0; i <= STEP; i++) {
-    simLoop(0);
-  }
-  #endif
-  //check if valid
-  //cout<<"Scene 6: ";
-  isValidScene(num);
-
-  
-
-  //set the scene
-  translateObject(obj[0], center02, matrixStandard);
-  translateObject(obj[1], center10, matrixStandard);
-  translateObject(obj[2], center20, matrixStandard);
-  translateObject(obj[3], center31, matrixStandard);
-  //run simulation
-  #ifdef DRAW
-  counter=0;
-  dsSTEP=200;
-  dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
-  #else
-  //STEP = 12;
-  for(int i = 0; i <= STEP; i++) {
-    simLoop(0);
-  }
-  #endif
-  //check if valid
-  //cout<<"Scene 7: ";
-  isValidScene(num);
-
    
-  
+
 
   }
   endTime = chrono::steady_clock::now();
