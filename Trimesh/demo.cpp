@@ -811,8 +811,9 @@ int main (int argc, char **argv)
   /   bool isStable(std:vector<string> model_IDs, std:vector<Eigen:: Affine3d> model-poses)
   */
 
+  STEP = 30;
 
-  int NUMBERofSCENES=700;
+  int NUMBERofSCENES=1001;
   int SCENESperLOOP=7;
   int NUMBERofLOOPS = NUMBERofSCENES/SCENESperLOOP;
   startTime = chrono::steady_clock::now();
@@ -830,7 +831,7 @@ int main (int argc, char **argv)
   dsSTEP=200;
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
-  STEP = 140;
+  //STEP = 140;
   for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
@@ -850,7 +851,7 @@ int main (int argc, char **argv)
   dsSTEP=200;
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
-  STEP = 140;
+  //STEP = 140;
   for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
@@ -871,7 +872,7 @@ int main (int argc, char **argv)
   dsSTEP=200;
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
-  STEP = 140;
+  //STEP = 140;
   for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
@@ -894,7 +895,7 @@ int main (int argc, char **argv)
   dsSTEP=200;
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
-  STEP = 140;
+  //STEP = 140;
   for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
@@ -916,7 +917,7 @@ int main (int argc, char **argv)
   dsSTEP=200;
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
-  STEP = 30;
+  //STEP = 30;
   for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
@@ -937,7 +938,7 @@ int main (int argc, char **argv)
   dsSTEP=200;
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
-  STEP = 30;
+  //STEP = 30;
   for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
@@ -956,10 +957,10 @@ int main (int argc, char **argv)
   //run simulation
   #ifdef DRAW
   counter=0;
-  dsSTEP=5;
+  dsSTEP=200;
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
-  STEP = 12;
+  //STEP = 12;
   for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
