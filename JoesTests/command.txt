@@ -1,0 +1,1 @@
+g++ -I /home/joeshepley/EigenTest/source_dir/ LearningAffine.cpp -o learnAffine
