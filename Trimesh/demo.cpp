@@ -53,7 +53,7 @@
 #define MAX_CONTACTS 64		// maximum number of contact points per body
 using namespace std;
 
-#define DRAW  //used to switch on or off the drawing of the scene
+//#define DRAW  //used to switch on or off the drawing of the scene
 static int HEIGHT =500;
 static int WIDTH = 1000;
 
@@ -66,7 +66,7 @@ static int GlobalCounter = 0;
 static int counter = 0;          //iterator which will reach COUNT
 static int dsSTEP=100;
 static int STEP = 20; //20?            //how long until we want to wait to check satic equlibrium?
-static double THRESHHOLD = 0.8;  //how much movement is allowed
+static double THRESHHOLD = 0.08;  //how much movement is allowed
 //static double GRAVITY = -19.8;    
 static double TIMESTEP = 0.1;
 
@@ -82,18 +82,20 @@ static chrono::steady_clock::time_point startTime, endTime;
 
 //***********SOME POSITION CONSTANTS**************
 const dReal center00[3] = {-2.3,0,1.82}; // 
-const dReal center01[3] = {0,0,3.1};
+const dReal center01[3] = {-0.1,-0.1,3.1};
 const dReal center02[3] = {-2,0,1.84};
 const dReal center03[3] = {1.4,0,0.65};
 const dReal center04[3] = {-2,0,2.82};
 const dReal center05[3] = {1.32,0.3,0.7};
 
+
 const dReal center10[3] = {2,0,0.44}; // 
 const dReal center11[3] = {3,0,0.44}; //
-const dReal center12[3] = {-2,0,2.73}; //
+const dReal center12[3] = {-2,0,2.76}; //
 
 
 const dReal center20[3] = {-2,0,0.66}; //
+const dReal center21[3] = {-1.93,0,0.66}; //
 
 
 const dReal center4[3] = {0,0,4}; //
@@ -275,10 +277,10 @@ static bool isValidScene(int num){
     } 
     if (stable == true){
       //cout << "TRUE: Is in static equilibrium......................." << endl;
-      cout << "TRUE"<<endl;
+      //cout << "TRUE"<<endl;
     } else{
       //cout << "FALSE: Not in static equilibrium......................" << endl;
-      cout << "FALSE"<<endl;
+      //cout << "FALSE"<<endl;
     }
 }
 
@@ -809,10 +811,18 @@ int main (int argc, char **argv)
   /   bool isStable(std:vector<string> model_IDs, std:vector<Eigen:: Affine3d> model-poses)
   */
 
+
+  int NUMBERofSCENES=700;
+  int SCENESperLOOP=7;
+  int NUMBERofLOOPS = NUMBERofSCENES/SCENESperLOOP;
+  startTime = chrono::steady_clock::now();
+  for (int i =0; i < NUMBERofLOOPS; i++) {
+
+
   //set the scene
   translateObject(obj[0], center02, matrixStandard);
   translateObject(obj[1], center12, matrixStandard);
-  translateObject(obj[2], center20, matrixStandard);
+  translateObject(obj[2], center21, matrixStandard);
   translateObject(obj[3], center30, matrixMilk_CartonSideways);
   //run simulation
   #ifdef DRAW
@@ -820,13 +830,13 @@ int main (int argc, char **argv)
   dsSTEP=200;
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
-  STEP = 20;
+  STEP = 140;
   for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
   #endif
   //check if valid
-  cout<<"Scene 1: ";
+  //cout<<"Scene 1: ";
   isValidScene(num);
 
   //set the scene
@@ -840,13 +850,13 @@ int main (int argc, char **argv)
   dsSTEP=200;
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
-  STEP = 20;
+  STEP = 140;
   for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
   #endif
   //check if valid
-  cout<<"Scene 2: ";
+  //cout<<"Scene 2: ";
   isValidScene(num);
   
 
@@ -861,15 +871,18 @@ int main (int argc, char **argv)
   dsSTEP=200;
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
-  STEP = 12;
+  STEP = 140;
   for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
   #endif
   //check if valid
-  cout<<"Scene 3: ";
+  //cout<<"Scene 3: ";
   isValidScene(num);
 
+  
+
+  
   //set the scene
   translateObject(obj[0], center03, matrixLean30);
   translateObject(obj[1], center11, matrixStandard);
@@ -878,36 +891,38 @@ int main (int argc, char **argv)
   //run simulation
   #ifdef DRAW
   counter=0;
-  dsSTEP=300;
+  dsSTEP=200;
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
-  STEP = 12;
+  STEP = 140;
   for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
   #endif
   //check if valid
-  cout<<"Scene 4: ";
+  //cout<<"Scene 4: ";
   isValidScene(num);
+
+  
 
   //set the scene
   translateObject(obj[0], center01, matrixStandard);
   translateObject(obj[1], center10, matrixStandard);
   translateObject(obj[2], center20, matrixStandard);
-  translateObject(obj[3], center30, matrixStandard);
+  translateObject(obj[3], center30, matrixMilk_CartonSideways);
   //run simulation
   #ifdef DRAW
   counter=0;
   dsSTEP=200;
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
-  STEP = 12;
+  STEP = 30;
   for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
   #endif
   //check if valid
-  cout<<"Scene 5: ";
+  //cout<<"Scene 5: ";
   isValidScene(num);
 
  
@@ -922,26 +937,26 @@ int main (int argc, char **argv)
   dsSTEP=200;
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
-  STEP = 200;
+  STEP = 30;
   for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
   #endif
   //check if valid
-  cout<<"Scene 6: ";
+  //cout<<"Scene 6: ";
   isValidScene(num);
 
- 
+  
 
   //set the scene
-  translateObject(obj[0], center00, matrixStandard);
+  translateObject(obj[0], center02, matrixStandard);
   translateObject(obj[1], center10, matrixStandard);
   translateObject(obj[2], center20, matrixStandard);
   translateObject(obj[3], center31, matrixStandard);
   //run simulation
   #ifdef DRAW
   counter=0;
-  dsSTEP=200;
+  dsSTEP=5;
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
   STEP = 12;
@@ -950,14 +965,18 @@ int main (int argc, char **argv)
   }
   #endif
   //check if valid
-  cout<<"Scene 7: ";
+  //cout<<"Scene 7: ";
   isValidScene(num);
 
    
   
 
-
-
+  }
+  endTime = chrono::steady_clock::now();
+  auto diff = endTime - startTime;
+  cout <<"Time: "<< chrono::duration <double, milli> (diff).count() << " ms" << endl;
+  cout<< "Scenes: "<<NUMBERofSCENES<<endl;
+  cout<<" Time per Scene: "<<(chrono::duration <double, milli> (diff).count())/NUMBERofSCENES<<"ms"<<endl;
   
 
   
