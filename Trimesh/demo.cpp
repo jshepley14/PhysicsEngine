@@ -51,10 +51,13 @@
 #define DENSITY (5.0)		// density of all objects
 #define GPB 3			// maximum number of geometries per body
 #define MAX_CONTACTS 64		// maximum number of contact points per body
-
-//#define DRAW  //used to switch on or off the drawing of the scene
-
 using namespace std;
+
+#define DRAW  //used to switch on or off the drawing of the scene
+static int HEIGHT =500;
+static int WIDTH = 1000;
+
+
 
 
 //Some COUNT, TIMESTEP pairs: 6, 0.1  and 20, 0.05
@@ -63,9 +66,9 @@ static int GlobalCounter = 0;
 static int counter = 0;          //iterator which will reach COUNT
 static int dsSTEP=100;
 static int STEP = 20; //20?            //how long until we want to wait to check satic equlibrium?
-static double THRESHHOLD = 0.1;  //how much movement is allowed
+static double THRESHHOLD = 0.8;  //how much movement is allowed
 //static double GRAVITY = -19.8;    
-static double TIMESTEP = 0.05;
+static double TIMESTEP = 0.1;
 
 //Time step originally was at 0.01, but we may
 //be able to increase this making calculations faster
@@ -78,30 +81,61 @@ static chrono::steady_clock::time_point startTime, endTime;
 
 
 //***********SOME POSITION CONSTANTS**************
-const dReal center1[3] = {-2,0,3*0.63}; // 
-const dReal center2[3] = {2,0,0.45}; // 
-const dReal center3[3] = {-2,0,0.63}; //
+const dReal center00[3] = {-2.3,0,1.82}; // 
+const dReal center01[3] = {0,0,3.1};
+const dReal center02[3] = {-2,0,1.84};
+const dReal center03[3] = {1.4,0,0.65};
+const dReal center04[3] = {-2,0,2.82};
+const dReal center05[3] = {1.32,0.3,0.7};
+
+const dReal center10[3] = {2,0,0.44}; // 
+const dReal center11[3] = {3,0,0.44}; //
+const dReal center12[3] = {-2,0,2.73}; //
+
+
+const dReal center20[3] = {-2,0,0.66}; //
+
+
 const dReal center4[3] = {0,0,4}; //
 const dReal center5[3] = {0,0,0.63}; //
 const dReal center6[3] = {0,-4,0.7}; //
 
 
-const dReal center1_2[3] = {1.0,1.0,3.0}; // length of edges
-const dReal center2_2[3] = {2.0,2.0,3.0}; // length of edges
-const dReal center3_2[3] = {3.0,3.0,3.0}; // length of edges
-const dReal center4_2[3] = {4.0,4.0,3.0}; // length of edges
+const dReal center1_2[3] = {1.0,1.0,3.0}; 
+const dReal center2_2[3] = {2.0,2.0,3.0}; 
+const dReal center3_2[3] = {3.0,3.0,3.0}; 
+const dReal center4_2[3] = {4.0,4.0,3.0}; 
+
+const dReal center30[3] = {0,0, 1.1}; 
+const dReal center31[3] = {0,0, 2.1};
+
 
 const dMatrix3 matrixStandard = { 1, 0, 0,
                                   0, 0, 0,
                                   0, 0, 0  };
 
-const dMatrix3 matrixSidewaysOriginal = { 0, 0, 1,
-                                  0, -1, 0,
-                                  1, 0, 0  };
+const dMatrix3 matrixLean30 = { 1,         0,         0,
+                            0,  0.500347, -0.865825,
+                            0,  0.865825,  0.500347  };
+
+const dMatrix3 matrixLean70 = { 1,         0,         0,
+                            0,  0.29967, -0.98545,
+                            0,  0.98545, 0.29967  };                            
 
 const dMatrix3 matrixSideways = { 0, 0, 1,
                                   0, -1, 0,
-                                  1, 0, 0  };                                 
+                                  1, 0, 0  };
+
+ const dMatrix3 matrixLean80 = { 1,         0,         0,
+                            0,  00.0707372, -0.997495,
+                            0,  0.997495, 0.0707372  };
+
+ const dMatrix3 matrixMilk_CartonSideways = {0.992128,-0.119376,-0.0378241,
+                         0,0.121999,0.989542,
+                         0.0769628,0,0.028241};                                                            
+
+                                  
+                                          
 
 
 
@@ -240,9 +274,11 @@ static bool isValidScene(int num){
        } 
     } 
     if (stable == true){
-      //cout << "TRUE: Is in static equilibrium" << endl;
+      //cout << "TRUE: Is in static equilibrium......................." << endl;
+      cout << "TRUE"<<endl;
     } else{
-      //cout << "FALSE: Not in static equilibrium" << endl;
+      //cout << "FALSE: Not in static equilibrium......................" << endl;
+      cout << "FALSE"<<endl;
     }
 }
 
@@ -485,13 +521,13 @@ static void command (int cmd)
         //add a new object
         i = num;
         num++;
-        createObject(obj[i], i, center4, matrixStandard, "red_mug.obj");
+        //createObject(obj[i], i, center4, matrixStandard, "red_mug.obj");
     }
 
 
     if (cmd == 'n') {
       //testing this
-      translateObject(obj[0], center1, matrixStandard);
+      //translateObject(obj[0], center1, matrixStandard);
     }
 
 
@@ -758,7 +794,7 @@ int main (int argc, char **argv)
   setObject(obj[i], i,  "red_mug.obj");
   setObject(obj[1], 10,  "teacup.obj");
   setObject(obj[2], 10,  "red_mug.obj");
-  setObject(obj[3], 10,  "red_mug.obj");
+  setObject(obj[3], 10,  "milk_carton.obj");
   //set the new scene     
   makeObject(obj[0]);     
   makeObject(obj[1]);    
@@ -772,23 +808,17 @@ int main (int argc, char **argv)
   /*
   /   bool isStable(std:vector<string> model_IDs, std:vector<Eigen:: Affine3d> model-poses)
   */
-  int NUMBERofSCENES=1000;
-  int SCENESperLOOP=1;
-  int NUMBERofLOOPS = NUMBERofSCENES/SCENESperLOOP;
-  startTime = chrono::steady_clock::now();
-  for (int i =0; i <= NUMBERofLOOPS; i++) {
 
-  /*
   //set the scene
-  translateObject(obj[0], center1_2, matrixStandard);
-  translateObject(obj[1], center2_2, matrixStandard);
-  translateObject(obj[2], center3_2, matrixStandard);
-  translateObject(obj[3], center4_2, matrixStandard);
+  translateObject(obj[0], center02, matrixStandard);
+  translateObject(obj[1], center12, matrixStandard);
+  translateObject(obj[2], center20, matrixStandard);
+  translateObject(obj[3], center30, matrixMilk_CartonSideways);
   //run simulation
   #ifdef DRAW
   counter=0;
-  dsSTEP=20;
-  dsSimulationLoop (argc,argv,1000,1000,&fn);
+  dsSTEP=200;
+  dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
   STEP = 20;
   for(int i = 0; i <= STEP; i++) {
@@ -796,19 +826,19 @@ int main (int argc, char **argv)
   }
   #endif
   //check if valid
+  cout<<"Scene 1: ";
   isValidScene(num);
-  */
 
   //set the scene
-  translateObject(obj[0], center1, matrixStandard);
-  translateObject(obj[1], center2, matrixStandard);
-  translateObject(obj[2], center3, matrixStandard);
-  translateObject(obj[3], center5, matrixStandard);
+  translateObject(obj[0], center02, matrixStandard);
+  translateObject(obj[1], center10, matrixStandard);
+  translateObject(obj[2], center20, matrixStandard);
+  translateObject(obj[3], center30, matrixMilk_CartonSideways);
   //run simulation
   #ifdef DRAW
   counter=0;
-  dsSTEP=20;
-  dsSimulationLoop (argc,argv,1000,1000,&fn);
+  dsSTEP=200;
+  dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
   STEP = 20;
   for(int i = 0; i <= STEP; i++) {
@@ -816,38 +846,123 @@ int main (int argc, char **argv)
   }
   #endif
   //check if valid
+  cout<<"Scene 2: ";
   isValidScene(num);
+  
 
-
-
-  }
-
-  endTime = chrono::steady_clock::now();
-  auto diff = endTime - startTime;
-  cout <<"Time: "<< chrono::duration <double, milli> (diff).count() << " ms" << endl;
-  cout<< "Scenes: "<<NUMBERofSCENES<<endl;
-  cout<<" Time per Scene: "<<(chrono::duration <double, milli> (diff).count())/NUMBERofSCENES<<"ms"<<endl;
-
-  /*
   //set the scene
-  translateObject(obj[0], center1, matrixStandard);
-  translateObject(obj[1], center2, matrixStandard);
-  translateObject(obj[2], center3, matrixStandard);
-  translateObject(obj[3], center5, matrixStandard);
+  translateObject(obj[0], center05, matrixLean70);
+  translateObject(obj[1], center11, matrixStandard);
+  translateObject(obj[2], center20, matrixStandard);
+  translateObject(obj[3], center30, matrixMilk_CartonSideways);
   //run simulation
   #ifdef DRAW
   counter=0;
-  dsSTEP=100;
-  dsSimulationLoop (argc,argv,1000,1000,&fn);
+  dsSTEP=200;
+  dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
-  STEP = 100;
+  STEP = 12;
   for(int i = 0; i <= STEP; i++) {
     simLoop(0);
   }
   #endif
   //check if valid
+  cout<<"Scene 3: ";
   isValidScene(num);
- */
+
+  //set the scene
+  translateObject(obj[0], center03, matrixLean30);
+  translateObject(obj[1], center11, matrixStandard);
+  translateObject(obj[2], center20, matrixStandard);
+  translateObject(obj[3], center30, matrixStandard);
+  //run simulation
+  #ifdef DRAW
+  counter=0;
+  dsSTEP=300;
+  dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
+  #else
+  STEP = 12;
+  for(int i = 0; i <= STEP; i++) {
+    simLoop(0);
+  }
+  #endif
+  //check if valid
+  cout<<"Scene 4: ";
+  isValidScene(num);
+
+  //set the scene
+  translateObject(obj[0], center01, matrixStandard);
+  translateObject(obj[1], center10, matrixStandard);
+  translateObject(obj[2], center20, matrixStandard);
+  translateObject(obj[3], center30, matrixStandard);
+  //run simulation
+  #ifdef DRAW
+  counter=0;
+  dsSTEP=200;
+  dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
+  #else
+  STEP = 12;
+  for(int i = 0; i <= STEP; i++) {
+    simLoop(0);
+  }
+  #endif
+  //check if valid
+  cout<<"Scene 5: ";
+  isValidScene(num);
+
+ 
+   //set the scene
+  translateObject(obj[0], center00, matrixStandard);
+  translateObject(obj[1], center10, matrixStandard);
+  translateObject(obj[2], center20, matrixStandard);
+  translateObject(obj[3], center30, matrixStandard);
+  //run simulation
+  #ifdef DRAW
+  counter=0;
+  dsSTEP=200;
+  dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
+  #else
+  STEP = 200;
+  for(int i = 0; i <= STEP; i++) {
+    simLoop(0);
+  }
+  #endif
+  //check if valid
+  cout<<"Scene 6: ";
+  isValidScene(num);
+
+ 
+
+  //set the scene
+  translateObject(obj[0], center00, matrixStandard);
+  translateObject(obj[1], center10, matrixStandard);
+  translateObject(obj[2], center20, matrixStandard);
+  translateObject(obj[3], center31, matrixStandard);
+  //run simulation
+  #ifdef DRAW
+  counter=0;
+  dsSTEP=200;
+  dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
+  #else
+  STEP = 12;
+  for(int i = 0; i <= STEP; i++) {
+    simLoop(0);
+  }
+  #endif
+  //check if valid
+  cout<<"Scene 7: ";
+  isValidScene(num);
+
+   
+  
+
+
+
+  
+
+  
+
+
 
 
 
