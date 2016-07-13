@@ -20,26 +20,20 @@ int main() {
 
 
   
-  Eigen::Matrix4d m = (t * r).matrix(); // Option 1
+  Eigen::Matrix4d m = (t * r).matrix(); // make 4x4 matrix
 
-  Eigen::Affine3d a = (r*t); // Option 1
+  Eigen::Affine3d a = (t*r); // important to keep t*r
+ 
+  cout << a.linear()<<"\n";   //print out 3x3 rotation matrix
+  cout<< a.translation()[1];  //access specific element of the translation
+  cout << "\n";
+  cout <<m;
 
-  cout<< a.operator()(0,0)<<"\n";
-  cout<< a.operator()(0,1)<<"\n";
-  cout<< a.operator()(0,2)<<"\n";
-  cout<< a.operator()(0,3)<<"\n";
-  cout<< a.operator()(1,0)<<"\n";
-  cout<< a.operator()(1,1)<<"\n";
-  cout<< a.operator()(1,2)<<"\n";
-  cout<< a.operator()(1,3)<<"\n";
-  cout<< a.operator()(2,0)<<"\n";
-  cout<< a.operator()(2,1)<<"\n";
-  cout<< a.operator()(2,2)<<"\n";
-  cout<< a.operator()(2,3)<<"\n";
-  cout<< a.operator()(3,0)<<"\n";
-  cout<< a.operator()(3,1)<<"\n";
-  cout<< a.operator()(3,2)<<"\n";
-  cout<< a.operator()(3,3)<<"\n";
+  Eigen::Matrix4d M;
+  M = a.matrix();
+  //cout<< a.linear();
+
+  a = M;
 
   
   //cout<< a.data()[3];
