@@ -2,13 +2,19 @@
 
 High level view for this project:
 
+In robotics, often times a robot's intended purpose is to manipulate objects
+whether it be picking items from a shelf and sorting them (Amazon Picking Challenge) 
+or even grabbing ingredients from the table to cook. In these tasks it's critical
+for the robot to understand what it is picking up and exactly where it is in the enviornment.
 Perceiving many objects' positions and orientations in cluttered environments
 is a challenging task and certain algorithms have been developed to solve this 
-by virtually examining every object configuration that could possibly exists and 
-comparing it to the original image the robot sees.  PhysicsEngine contains code that
+by virtually examining every object configuration that could possibly be generated and 
+comparing it to the original image the robot sees.  PhysicsEngine contains a program that
 takes in an object scene and tests if the objects are in a valid configuration or 
-not before comparing them to the original image the robot sees, and the result is
-that the computation time is drastically reduced.
+not.  This prevents the algorithm from spending time comparing 1000s of scenes when in reality
+it never needed to because those scenes would not exist in real life due to the laws of physics.
+The result of PhysicsEngine is that the computation time for the robot's perception algorithm is 
+drastically reduced.
 
 
 
