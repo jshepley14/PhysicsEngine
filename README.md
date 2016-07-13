@@ -23,8 +23,9 @@ Details and lower level goal:
 Coded in c++, uses Open Dynamics Engine, Drawstuff, and Eigen libraries.
 Given some number of objects along with their exact positions and orientations, the 
 goal is to check if this set of objects called a "scene" is in static equilibrium or 
-not.  Because reducing computation time is the ultimate goal, I try to accomplish the 
+not.  Taking a look at SceneValidator.h will give you a good idea.
+Because reducing computation time is the ultimate goal, I try to accomplish the 
 scene validation as fast as possible while still giving good results.  This is why Open
-Dynamics Engine was chose as the physics library.  Drawstuff is a primitive graphics 
+Dynamics Engine was chosen as the physics library.  Drawstuff is a primitive graphics 
 library which is not used during the actual application of this program. Eigen is briefly 
 used to manipulate some of the transform matrices.
