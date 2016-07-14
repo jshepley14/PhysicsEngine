@@ -26,7 +26,7 @@
 #include <string.h>
 #include <iostream>
 #include <fstream>
-#include <vector>
+//#include <vector>
 #include <cmath>
 #include <chrono>  //used for timing code
 #include <stdio.h>
@@ -814,6 +814,24 @@ Eigen::Affine3d create_rotation_matrix(double ax, double ay, double az) {
 }
 
 
+void setModels(std::vector<string> modelnames, std::vector<string> filenames){
+   if( modelnames.size() != filenames.size()){
+          std::cout<<"***ERROR*** in setModels(std::vector<string> modelnames, std::vector<string> filenames). The problem is that modelnames is not the same size as filenames"<<endl;
+   } else{
+      num = filenames.size();
+      cout<<num;
+      for (int i =0; i < num; i++){
+
+          char *charfilenames = new char[filenames[i].length() + 1];
+          std::strcpy(charfilenames, filenames[i].c_str());
+          setObject(obj[i], i, charfilenames );
+          cout<<charfilenames<<endl;   
+          makeObject(obj[i]);
+      }
+   }
+}
+
+
 //implement the functions below
 //create better names for these functions?
 //create seperate file to test them in?
@@ -822,6 +840,7 @@ Eigen::Affine3d create_rotation_matrix(double ax, double ay, double az) {
 /*
 //later, remember to just do sdt:vector ya know?  might have to change all other 
 //vectors in the program because of this however.
+
 void setModels(vector<string> modelnames, vector<string> filepath){
    
    // -fill obj[] array from filenames
@@ -879,6 +898,7 @@ bool isStableYet(int num, int step, obj[]?){
     //check if valid
     //cout<<"Scene 1: ";
     isValidScene(num, obj[]);
+
 }
 
 */
@@ -913,24 +933,14 @@ int main (int argc, char **argv)
 
   
 
-  vector<string> filenames = {"/home/joeshepley/Projects/PhysicsEngine/teacup.obj",
-                            "/home/joeshepley/Projects/PhysicsEngine/milk_carton.obj",
-                             "/home/joeshepley/Projects/PhysicsEngine/red_mug.obj"};
+  vector<string> filenames = {"/home/joeshepley/Projects/PhysicsEngine/Trimesh/teacup.obj",
+                            "/home/joeshepley/Projects/PhysicsEngine/Trimesh/milk_carton.obj",
+                             "/home/joeshepley/Projects/PhysicsEngine/Trimesh/red_mug.obj"};
   vector<string> modelnames = {"teacup", "milk_carton", "mug"};
 
-  /*
-  / void setModels(std:vector<string> modelnames, std:vector<string> filepath);  
-  */
- 
-  num = 1;   //number of elements.  must specify!!!!!
-  int i = 0;
-  setObject(obj[i], i,  "/home/joeshepley/Projects/PhysicsEngine/teacup.obj");
-  
-  //set the new scene     
-  makeObject(obj[0]);
-  
-  
-  //Eigen TESTS..............................................
+
+
+   //Eigen TESTS..............................................
 
 
   //make affine3d 
@@ -940,49 +950,70 @@ int main (int argc, char **argv)
   Eigen::Affine3d aq = Eigen::Affine3d(q);
   Eigen::Affine3d t(Eigen::Translation3d(Eigen::Vector3d(0,0,0.45)));
   Eigen::Affine3d a = (t*aq); // important to keep t*r
+
+  //make affine3d 
+    
+  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
+  q.normalize();
+  aq = Eigen::Affine3d(q);
+  t = (Eigen::Translation3d(Eigen::Vector3d(2,0,1.2)));
+  Eigen::Affine3d b = (t*aq); // important to keep t*r
+
+  //make affine3d 
+    
+  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
+  q.normalize();
+  aq = Eigen::Affine3d(q);
+  t =  (Eigen::Translation3d(Eigen::Vector3d(-2,0,0.64)));
+  Eigen::Affine3d c = (t*aq); // important to keep t*r
+  
+
+  vector<Eigen::Affine3d> model_poses = {a,b,c};
+
+
+
+
+  
+
+
+
+  
+
+
+ 
+
+  
+ 
+
+
+
+
   //extract affine3d
-  const dMatrix3 matrixStandardtest = { 
+  const dMatrix3 matrixQa = { 
          a(0,0), a(0,1), a(0,2),  
          a(1,0), a(1,1), a(1,2),  
          a(2,0), a(2,1), a(2,2)    }; 
-  const dReal centerQ1[3] = {a.translation()[0],a.translation()[1], a.translation()[2]};
+  const dReal centerQa[3] = {a.translation()[0],a.translation()[1], a.translation()[2]};
+
+  //extract affine3d
+  const dMatrix3 matrixQb = { 
+         b(0,0), b(0,1), b(0,2),  
+         b(1,0), b(1,1), b(1,2),  
+         b(2,0), b(2,1), b(2,2)    }; 
+  const dReal centerQb[3] = {b.translation()[0],b.translation()[1], b.translation()[2]};
+
+  //extract affine3d
+  const dMatrix3 matrixQc = { 
+         c(0,0), c(0,1), c(0,2),  
+         c(1,0), c(1,1), c(1,2),  
+         c(2,0), c(2,1), c(2,2)    }; 
+  const dReal centerQc[3] = {c.translation()[0],c.translation()[1], c.translation()[2]};
 
 
-/*
-  cout << "\n";
-  cout << "\n";
-  cout<<"Affine3d matrix from quarternions\n";
-  cout << a.linear()<<"\n";   //print out 3x3 rotation matrix
-  cout << "\n";
-  cout << "\n";
 
-  dQuaternion qtest;
-  dRtoQ(matrixStandard,qtest );
-  cout<<"quarternions (qtest) from matrixStandard \n";
-  cout<<qtest[0]<<", "<<qtest[1]<<", "<<qtest[2]<<","<<qtest[3]<<endl;
 
-  dQuaternion qtest2 = {0.866, 0, 0, 0};
-  dMatrix3 matrixTest;
-  dQtoR( qtest ,matrixTest);
-  cout << "\n";
-  cout<<"matrixTest from quaternions^ (qtest) \n";
-  cout<<matrixTest[0]<<", "<<matrixTest[1]<<", "<<matrixTest[2]<<endl;
-  cout<<matrixTest[3]<<", "<<matrixTest[4]<<", "<<matrixTest[5]<<endl;
-  cout<<matrixTest[6]<<", "<<matrixTest[7]<<", "<<matrixTest[8]<<endl;
 
-  //Eigen::Affine3d r2 = create_rotation_matrix(0,3.14/4,0);
-  Eigen::Affine3d r2 = Eigen::Affine3d(Eigen::AngleAxisd(3.14/2, Eigen::Vector3d(1, 0, 0)));
-  Eigen::Affine3d t2(Eigen::Translation3d(Eigen::Vector3d(1,1,2)));
-  const dMatrix3 R2 = { 
-         r2(0,0), r2(0,1), r2(0,2),  
-         r2(1,0), r2(1,1), r2(1,2),  
-         r2(2,0), r2(2,1), r2(2,2)    };
-  cout << "\n";
- 
-  cout<<"Rotation from Axis Angle\n" << r2.linear()<<"\n";
-
-*/
-
+  setModels(modelnames, filenames);
 
   //To Do
   // -make three affines
@@ -998,7 +1029,9 @@ int main (int argc, char **argv)
 
 
   //set the scene
-  translateObject(obj[0], centerQ1, matrixStandardtest);
+  translateObject(obj[0], centerQa, matrixQa);
+  translateObject(obj[1], centerQb, matrixQb);
+  translateObject(obj[2], centerQc, matrixQc);
   
   //run simulation
   #ifdef DRAW
