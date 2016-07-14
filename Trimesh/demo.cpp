@@ -30,6 +30,9 @@
 #include <cmath>
 #include <chrono>  //used for timing code
 #include <stdio.h>
+#include <iostream>
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 #include "objLoader.h"
 
 #ifdef _MSC_VER
@@ -53,7 +56,7 @@
 #define MAX_CONTACTS 64		// maximum number of contact points per body
 using namespace std;
 
-//#define DRAW  //used to switch on or off the drawing of the scene
+#define DRAW  //used to switch on or off the drawing of the scene
 static int HEIGHT =500;
 static int WIDTH = 1000;
 
@@ -159,7 +162,7 @@ const dReal center69x[3] = {4,9, 0.44};
 
 
 const dMatrix3 matrixStandard = { 1, 0, 0,
-                                  0, 0, 0,
+                                  0, 0, -1,
                                   0, 0, 0  };
 
 const dMatrix3 matrixLean30 = { 1,         0,         0,
@@ -797,10 +800,17 @@ static void simLoop (int pause)
   }
 
 
+}
 
 
-
-
+Eigen::Affine3d create_rotation_matrix(double ax, double ay, double az) {
+  Eigen::Affine3d rx =
+      Eigen::Affine3d(Eigen::AngleAxisd(ax, Eigen::Vector3d(1, 0, 0)));
+  Eigen::Affine3d ry =
+      Eigen::Affine3d(Eigen::AngleAxisd(ay, Eigen::Vector3d(0, 1, 0)));
+  Eigen::Affine3d rz =
+      Eigen::Affine3d(Eigen::AngleAxisd(az, Eigen::Vector3d(0, 0, 1)));
+  return rz * ry * rx;
 }
 
 
@@ -818,14 +828,12 @@ int main (int argc, char **argv)
   // create world
   dInitODE2(0);
   world = dWorldCreate();
- 
   space = dSimpleSpaceCreate(0);
   contactgroup = dJointGroupCreate (0);
   dWorldSetGravity (world,0,0,-0.5);
   dWorldSetCFM (world,1e-5);
   dCreatePlane (space,0,0,1,0);
   memset (obj,0,sizeof(obj));
-  
   dThreadingImplementationID threading = dThreadingAllocateMultiThreadedImplementation();
   dThreadingThreadPoolID pool = dThreadingAllocateThreadPool(4, 0, dAllocateFlagBasicData, NULL);
   dThreadingThreadPoolServeMultiThreadedImplementation(pool, threading);
@@ -833,46 +841,79 @@ int main (int argc, char **argv)
   dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
 
   
+
+
+
   /*
   / void setModels(std:vector<string> modelnames, std:vector<string> filepath);  
   */
  
-  num = 14;   //number of elements.  must specify!!!!!
+  num = 1;   //number of elements.  must specify!!!!!
   int i = 0;
-  setObject(obj[i], i,  "teacup.obj");
-  setObject(obj[1], i,  "teacup.obj");
-  setObject(obj[2], i,  "teacup.obj");
-  setObject(obj[3], i,  "teacup.obj");
-  setObject(obj[4], i,  "teacup.obj");
-  setObject(obj[5], i,  "teacup.obj");
-  setObject(obj[6], i,  "teacup.obj");
-  setObject(obj[7], i,  "teacup.obj");
-  setObject(obj[8], i,  "teacup.obj");
-  setObject(obj[9], i,  "teacup.obj");
-  setObject(obj[10], i,  "teacup.obj");
-  setObject(obj[11], i,  "teacup.obj");
-  setObject(obj[12], i,  "teacup.obj");
-  setObject(obj[13], i,  "teacup.obj");
+  setObject(obj[i], i,  "/home/joeshepley/Projects/PhysicsEngine/teacup.obj");
   
   //set the new scene     
   makeObject(obj[0]);
-  makeObject(obj[1]);     
-  makeObject(obj[2]);
-  makeObject(obj[3]);
-  makeObject(obj[4]);
-  makeObject(obj[5]);
-  makeObject(obj[6]);
-  makeObject(obj[7]);
-  makeObject(obj[8]);
-  makeObject(obj[9]);
-  makeObject(obj[10]);
-  makeObject(obj[11]);
-  makeObject(obj[12]);
-  makeObject(obj[13]);
   
+  
+  //Eigen TESTS..............................................
+
+  //make rotation R from quarternion
+  Eigen::Quaterniond q;  
+  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
+  q.normalize();
+  Eigen::Affine3d aq = Eigen::Affine3d(q);
+  Eigen::Affine3d t(Eigen::Translation3d(Eigen::Vector3d(0,0,0.45)));
+  Eigen::Affine3d a = (t*aq); // important to keep t*r
+ 
+  cout << "\n";
+  cout << "\n";
+  cout<<"Affine3d matrix from quarternions\n";
+  cout << a.linear()<<"\n";   //print out 3x3 rotation matrix
+  cout << "\n";
+  cout << "\n";
+
+   const dMatrix3 matrixStandardtest = { 
+         a(0,0), a(0,1), a(0,2),  
+         a(1,0), a(1,1), a(1,2),  
+         a(2,0), a(2,1), a(2,2)    };
+   
+   const dReal centerQ1[3] = {a.translation()[0],a.translation()[1], a.translation()[2]};
+  
+
+
+
+  dQuaternion qtest;
+  dRtoQ(matrixStandard,qtest );
+  cout<<"quarternions (qtest) from matrixStandard \n";
+  cout<<qtest[0]<<", "<<qtest[1]<<", "<<qtest[2]<<","<<qtest[3]<<endl;
+
+  const dQuaternion qtest2 = {0.866, 0, 0, 0};
+  dMatrix3 matrixTest;
+  dQtoR( qtest ,matrixTest);
+  cout << "\n";
+  cout<<"matrixTest from quaternions^ (qtest) \n";
+  cout<<matrixTest[0]<<", "<<matrixTest[1]<<", "<<matrixTest[2]<<endl;
+  cout<<matrixTest[3]<<", "<<matrixTest[4]<<", "<<matrixTest[5]<<endl;
+  cout<<matrixTest[6]<<", "<<matrixTest[7]<<", "<<matrixTest[8]<<endl;
+
+
+
+   
 
   
   
+  
+  //Eigen::Affine3d r2 = create_rotation_matrix(0,3.14/4,0);
+  Eigen::Affine3d r2 = Eigen::Affine3d(Eigen::AngleAxisd(3.14/2, Eigen::Vector3d(1, 0, 0)));
+  Eigen::Affine3d t2(Eigen::Translation3d(Eigen::Vector3d(1,1,2)));
+  const dMatrix3 R2 = { 
+         r2(0,0), r2(0,1), r2(0,2),  
+         r2(1,0), r2(1,1), r2(1,2),  
+         r2(2,0), r2(2,1), r2(2,2)    };
+  cout << "\n";
+ 
+  cout<<"Rotation from Axis Angle\n" << r2.linear()<<"\n";
 
  
   /*
@@ -881,64 +922,14 @@ int main (int argc, char **argv)
 
   STEP = 30; 
 
-  int NUMBERofSCENES=1000;
-  int SCENESperLOOP=2;
-  int NUMBERofLOOPS = NUMBERofSCENES/SCENESperLOOP;
-  startTime = chrono::steady_clock::now();
-
-  for (int i =0; i < NUMBERofLOOPS; i++) {
-
 
   //set the scene
-  translateObject(obj[0], center50, matrixStandard);
-  translateObject(obj[1], center51, matrixStandard);
-  translateObject(obj[2], center52, matrixStandard);
-  translateObject(obj[3], center53, matrixStandard);
-  translateObject(obj[4], center54, matrixStandard);
-  translateObject(obj[5], center55, matrixStandard);
-  translateObject(obj[6], center56, matrixStandard);
-  translateObject(obj[7], center57, matrixStandard);
-  translateObject(obj[8], center58, matrixStandard);
-  translateObject(obj[9], center59, matrixStandard);
-  translateObject(obj[10], center60, matrixStandard);
-  translateObject(obj[11], center61, matrixStandard);
-  translateObject(obj[12], center62, matrixStandard);
-  translateObject(obj[13], center63, matrixStandard);
-
+  translateObject(obj[0], centerQ1, matrixStandardtest);
+  
   //run simulation
   #ifdef DRAW
   counter=0;
-  dsSTEP=200;
-  dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
-  #else
-  //STEP = 140;
-  for(int i = 0; i <= STEP; i++) {
-    simLoop(0);
-  }
-  #endif
-  //check if valid
-  //cout<<"Scene 1: ";
-  isValidScene(num);
-
-    //set the scene
-  translateObject(obj[0], center50x, matrixStandard);
-  translateObject(obj[1], center51x, matrixStandard);
-  translateObject(obj[2], center52x, matrixStandard);
-  translateObject(obj[3], center53x, matrixStandard);
-  translateObject(obj[4], center54x, matrixStandard);
-  translateObject(obj[5], center55x, matrixStandard);
-  translateObject(obj[6], center56x, matrixStandard);
-  translateObject(obj[7], center57x, matrixStandard);
-  translateObject(obj[8], center58x, matrixStandard);
-  translateObject(obj[9], center59x, matrixStandard);
-  translateObject(obj[10], center60x, matrixStandard);
-  translateObject(obj[11], center61x, matrixStandard);
-  translateObject(obj[12], center62x, matrixStandard);
-  translateObject(obj[13], center63x, matrixStandard);
-  //run simulation
-  #ifdef DRAW
-  counter=0;
-  dsSTEP=200;
+  dsSTEP=2000;
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
   #else
   //STEP = 140;
@@ -951,16 +942,7 @@ int main (int argc, char **argv)
   isValidScene(num);
 
   
-   
 
-
-  }
-  endTime = chrono::steady_clock::now();
-  auto diff = endTime - startTime;
-  cout <<"Time: "<< chrono::duration <double, milli> (diff).count() << " ms" << endl;
-  cout<< "Scenes: "<<NUMBERofSCENES<<endl;
-  cout<<" Time per Scene: "<<(chrono::duration <double, milli> (diff).count())/NUMBERofSCENES<<"ms"<<endl;
-  
 
   
 
