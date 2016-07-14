@@ -814,6 +814,75 @@ Eigen::Affine3d create_rotation_matrix(double ax, double ay, double az) {
 }
 
 
+//implement the functions below
+//create better names for these functions?
+//create seperate file to test them in?
+
+
+/*
+//later, remember to just do sdt:vector ya know?  might have to change all other 
+//vectors in the program because of this however.
+void setModels(vector<string> modelnames, vector<string> filepath){
+   
+   // -fill obj[] array from filenames
+   if modelnames.size != filepath.size{
+          print ERROR
+   }
+   else{
+      num = filepath.size
+      for (int i =0; i < num; i++){
+          setObject(obj[i], i, filepath[i] );   
+          makeObject(obj[0]);
+      }
+   }
+
+
+  // -make hashmap between modelnames (aka model_IDs) and obj[]
+  // make seperate function for this so its easier to debug?
+  makehashmap( vector<string> modelnames,  &obj?  )
+
+}
+
+//need to figure out what to do about this num thing
+bool isStable(std:vector<string> model_IDs, std:vector<Eigen:: Affine3d> model_poses){
+   
+    //set all the Objects's positions
+    for (int i =0; i < num; i++){
+       object ob = IDtoObject(model_IDs[i])
+       Eigen::Affine3d a = model_poses[i]
+       const dMatrix3 R = { 
+         a(0,0), a(0,1), a(0,2),  
+         a(1,0), a(1,1), a(1,2),  
+         a(2,0), a(2,1), a(2,2)    }; 
+       const dReal center[3] = {a.translation()[0],a.translation()[1], a.translation()[2]};
+       translateObject(ob, center, R);
+    }
+    if !isStableYet(num, 5) return false //5 is number of Steps before checking
+    if !isStableYet(num, 30) return false
+    if !isStableYet(num, 150) return false
+
+}
+
+//helper function for isStable
+bool isStableYet(int num, int step, obj[]?){
+  //run simulation
+    #ifdef DRAW
+    counter=0;
+    dsSTEP=2000;
+    dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
+    #else
+    STEP = 140;
+    for(int i = 0; i <= STEP; i++) {
+      simLoop(0);
+    }
+    #endif
+    //check if valid
+    //cout<<"Scene 1: ";
+    isValidScene(num, obj[]);
+}
+
+*/
+
 int main (int argc, char **argv)
 {
   // setup pointers to drawstuff callback functions
@@ -842,7 +911,12 @@ int main (int argc, char **argv)
 
   
 
+  
 
+  vector<string> filenames = {"/home/joeshepley/Projects/PhysicsEngine/teacup.obj",
+                            "/home/joeshepley/Projects/PhysicsEngine/milk_carton.obj",
+                             "/home/joeshepley/Projects/PhysicsEngine/red_mug.obj"};
+  vector<string> modelnames = {"teacup", "milk_carton", "mug"};
 
   /*
   / void setModels(std:vector<string> modelnames, std:vector<string> filepath);  
@@ -858,14 +932,23 @@ int main (int argc, char **argv)
   
   //Eigen TESTS..............................................
 
-  //make rotation R from quarternion
+
+  //make affine3d 
   Eigen::Quaterniond q;  
   q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
   q.normalize();
   Eigen::Affine3d aq = Eigen::Affine3d(q);
   Eigen::Affine3d t(Eigen::Translation3d(Eigen::Vector3d(0,0,0.45)));
   Eigen::Affine3d a = (t*aq); // important to keep t*r
- 
+  //extract affine3d
+  const dMatrix3 matrixStandardtest = { 
+         a(0,0), a(0,1), a(0,2),  
+         a(1,0), a(1,1), a(1,2),  
+         a(2,0), a(2,1), a(2,2)    }; 
+  const dReal centerQ1[3] = {a.translation()[0],a.translation()[1], a.translation()[2]};
+
+
+/*
   cout << "\n";
   cout << "\n";
   cout<<"Affine3d matrix from quarternions\n";
@@ -873,22 +956,12 @@ int main (int argc, char **argv)
   cout << "\n";
   cout << "\n";
 
-   const dMatrix3 matrixStandardtest = { 
-         a(0,0), a(0,1), a(0,2),  
-         a(1,0), a(1,1), a(1,2),  
-         a(2,0), a(2,1), a(2,2)    };
-   
-   const dReal centerQ1[3] = {a.translation()[0],a.translation()[1], a.translation()[2]};
-  
-
-
-
   dQuaternion qtest;
   dRtoQ(matrixStandard,qtest );
   cout<<"quarternions (qtest) from matrixStandard \n";
   cout<<qtest[0]<<", "<<qtest[1]<<", "<<qtest[2]<<","<<qtest[3]<<endl;
 
-  const dQuaternion qtest2 = {0.866, 0, 0, 0};
+  dQuaternion qtest2 = {0.866, 0, 0, 0};
   dMatrix3 matrixTest;
   dQtoR( qtest ,matrixTest);
   cout << "\n";
@@ -897,13 +970,6 @@ int main (int argc, char **argv)
   cout<<matrixTest[3]<<", "<<matrixTest[4]<<", "<<matrixTest[5]<<endl;
   cout<<matrixTest[6]<<", "<<matrixTest[7]<<", "<<matrixTest[8]<<endl;
 
-
-
-   
-
-  
-  
-  
   //Eigen::Affine3d r2 = create_rotation_matrix(0,3.14/4,0);
   Eigen::Affine3d r2 = Eigen::Affine3d(Eigen::AngleAxisd(3.14/2, Eigen::Vector3d(1, 0, 0)));
   Eigen::Affine3d t2(Eigen::Translation3d(Eigen::Vector3d(1,1,2)));
@@ -914,6 +980,14 @@ int main (int argc, char **argv)
   cout << "\n";
  
   cout<<"Rotation from Axis Angle\n" << r2.linear()<<"\n";
+
+*/
+
+
+  //To Do
+  // -make three affines
+  // -put them in a vector
+  // -model_IDs is hashmap to obj[] array
 
  
   /*
