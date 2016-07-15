@@ -56,7 +56,7 @@
 #define MAX_CONTACTS 64		// maximum number of contact points per body
 using namespace std;
 
-#define DRAW  //used to switch on or off the drawing of the scene
+//#define DRAW  //used to switch on or off the drawing of the scene
 static int HEIGHT =500;
 static int WIDTH = 1000;
 
@@ -303,9 +303,9 @@ static bool inStaticEquilibrium(MyObject &object){
     //cout << "THRESHHOLD : " << THRESHHOLD << " \n" << endl;
     //Check if object moved since initialization
     //cout<<"          X            Y            Z"  <<endl;
-    cout<<"Start: "<<startX<<", "<<startY<<", "<<startZ<<endl;
-    cout<<"  End: "<<endX<<", "<<endY<<", "<<endZ<<endl;
-    cout<<"Delta: "<<deltaX<<", "<<deltaY<<", "<<deltaZ<<endl;
+    //cout<<"Start: "<<startX<<", "<<startY<<", "<<startZ<<endl;
+    //cout<<"  End: "<<endX<<", "<<endY<<", "<<endZ<<endl;
+    //cout<<"Delta: "<<deltaX<<", "<<deltaY<<", "<<deltaZ<<endl;
     if ( deltaX > THRESHHOLD || deltaY > THRESHHOLD || deltaZ > THRESHHOLD){
         return false;
         //cout << "FALSE: Not in static equilibrium" << endl;
@@ -329,10 +329,10 @@ static bool isValid(std::vector<string> modelnames){
        } 
     } 
     if (stable == true){
-      cout << "TRUE"<<endl;
+      //cout << "TRUE"<<endl;
       return true;
     } else{
-      cout << "FALSE"<<endl;
+      //cout << "FALSE"<<endl;
       return false;
     }
 }
@@ -841,13 +841,11 @@ void setModels(std::vector<string> modelnames, std::vector<string> filenames){
           std::cout<<"***ERROR*** in setModels(std::vector<string> modelnames, std::vector<string> filenames). The problem is that modelnames is not the same size as filenames"<<endl;
    } else{
       num = filenames.size();
-      cout<<num;
       for (int i =0; i < num; i++){
 
           char *charfilenames = new char[filenames[i].length() + 1];
           std::strcpy(charfilenames, filenames[i].c_str());
           setObject(obj[i], i, charfilenames );
-          cout<<charfilenames<<endl;   
           makeObject(obj[i]);
       }
    }
@@ -914,6 +912,13 @@ bool isValidScene(std::vector<string> modelnames, std::vector<Eigen::Affine3d> m
 
 
 
+//To Do:
+//do some more testing?
+//try to make git work for you remember there is a pushing problem
+//tell venkat the API is made, talk to him about what main() looks like
+//   and if the create ODE is gonna be a problem
+//make a header file and test it in another test_sceneValidator.cpp
+//make a  cmake?
 
 
 
@@ -955,16 +960,48 @@ void closeDownODE(){
 
 int main (int argc, char **argv)
 {
-  /*
-// setup pointers to drawstuff callback functions
-  dsFunctions fn;
-  fn.version = DS_VERSION;
-  fn.start = &start;
-  fn.step = &simLoop;
-  fn.command = NULL;
-  fn.stop = NULL;
-  fn.path_to_textures = "/home/joeshepley/ode-0.13.1/drawstuff/textures";
-*/
+  
+
+ // Here's all the input***********************************************************************************************************
+  vector<string> filenames = {"/home/joeshepley/Projects/PhysicsEngine/Trimesh/object_files/teacup.obj",
+                            "/home/joeshepley/Projects/PhysicsEngine/Trimesh/object_files/milk_carton.obj",
+                             "/home/joeshepley/Projects/PhysicsEngine/Trimesh/object_files/red_mug.obj"};
+  
+  vector<string> modelnames = {"teacup", "milk_carton", "mug"};
+  
+  //make affine3d's
+  Eigen::Quaterniond q;  
+  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
+  q.normalize();
+  Eigen::Affine3d aq = Eigen::Affine3d(q);
+  Eigen::Affine3d t(Eigen::Translation3d(Eigen::Vector3d(-2.5,0, 1.59)));
+  Eigen::Affine3d a = (t*aq); 
+    
+  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
+  q.normalize();
+  aq = Eigen::Affine3d(q);
+  t = (Eigen::Translation3d(Eigen::Vector3d(2,0,1.1)));
+  Eigen::Affine3d b = (t*aq); 
+    
+  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
+  q.normalize();
+  aq = Eigen::Affine3d(q);
+  t =  (Eigen::Translation3d(Eigen::Vector3d(-2,0,0.66)));
+  Eigen::Affine3d c = (t*aq); 
+
+  vector<Eigen::Affine3d> model_poses = {a,b,c};  //unbalanced teacup on mug
+
+  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
+  q.normalize();
+  aq = Eigen::Affine3d(q);
+  t =  (Eigen::Translation3d(Eigen::Vector3d(-2,0, 3.59)));
+  Eigen::Affine3d a2 = (t*aq); 
+  
+  vector<Eigen::Affine3d> model_poses2 = {a2,b,c};  //teacup falling from the sky
+// Here's all the input^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+  /* The following is what would go in main() */
 
   // create world
   dInitODE2(0);
@@ -973,118 +1010,33 @@ int main (int argc, char **argv)
   contactgroup = dJointGroupCreate (0);
   dWorldSetGravity (world,0,0,-0.5);
   dWorldSetCFM (world,1e-5);
-  dCreatePlane (space,0,0,1,0);
-  //memset (obj,0,sizeof(obj));
+  dCreatePlane (space,0,0,1,0); 
   dThreadingImplementationID threading = dThreadingAllocateMultiThreadedImplementation();
   dThreadingThreadPoolID pool = dThreadingAllocateThreadPool(4, 0, dAllocateFlagBasicData, NULL);
   dThreadingThreadPoolServeMultiThreadedImplementation(pool, threading);
-  // dWorldSetStepIslandsProcessingMaxThreadCount(world, 1);
   dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
 
 
-   
-
-  
-
-// Here's all the input********************************************************************************************************
-  vector<string> filenames = {"/home/joeshepley/Projects/PhysicsEngine/Trimesh/object_files/teacup.obj",
-                            "/home/joeshepley/Projects/PhysicsEngine/Trimesh/object_files/milk_carton.obj",
-                             "/home/joeshepley/Projects/PhysicsEngine/Trimesh/object_files/red_mug.obj"};
-  
-  vector<string> modelnames = {"teacup", "milk_carton", "mug"};
- 
-
-
-  //make affine3d's
-  Eigen::Quaterniond q;  
-  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
-  q.normalize();
-  Eigen::Affine3d aq = Eigen::Affine3d(q);
-  Eigen::Affine3d t(Eigen::Translation3d(Eigen::Vector3d(-2.5,0,1.59)));
-  Eigen::Affine3d a = (t*aq); // important to keep t*r
-    
-  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
-  q.normalize();
-  aq = Eigen::Affine3d(q);
-  t = (Eigen::Translation3d(Eigen::Vector3d(2,0,1.1)));
-  Eigen::Affine3d b = (t*aq); // important to keep t*r 
-    
-  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
-  q.normalize();
-  aq = Eigen::Affine3d(q);
-  t =  (Eigen::Translation3d(Eigen::Vector3d(-2,0,0.66)));
-  Eigen::Affine3d c = (t*aq); // important to keep t*r
-  
-  vector<Eigen::Affine3d> model_poses = {a,b,c};
-// Here's all the input^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
+  // Our two functions
   setModels(modelnames, filenames);
 
+  int NUMBERofSCENES=1000;
+  int SCENESperLOOP=2;
+  int NUMBERofLOOPS = NUMBERofSCENES/SCENESperLOOP;
+  startTime = chrono::steady_clock::now();
+  for (int i =0; i <= NUMBERofLOOPS; i++) {
 
-  
+     isValidScene(modelnames, model_poses);
+     isValidScene(modelnames, model_poses2);
+     
+  }
+  endTime = chrono::steady_clock::now();
+  auto diff = endTime - startTime;
+  cout <<"Time: "<< chrono::duration <double, milli> (diff).count() << " ms" << endl;
+  cout<< "Scenes: "<<NUMBERofSCENES<<endl;
+  cout<<" Time per Scene: "<<(chrono::duration <double, milli> (diff).count())/NUMBERofSCENES<<"ms"<<endl;
 
-
-
-
-
-  //To Do
-  // -model_IDs is hashmap to obj[] array
-
- 
-  /*
-  /   bool isValidScene(std:vector<string> model_IDs, std:vector<Eigen:: Affine3d> model-poses)
-  */
-
-//this will go in isValid
-  //extract affine3d
-  const dMatrix3 matrixQa = { 
-         a(0,0), a(0,1), a(0,2),  
-         a(1,0), a(1,1), a(1,2),  
-         a(2,0), a(2,1), a(2,2)    }; 
-  const dReal centerQa[3] = {a.translation()[0],a.translation()[1], a.translation()[2]};
-
-  //extract affine3d
-  const dMatrix3 matrixQb = { 
-         b(0,0), b(0,1), b(0,2),  
-         b(1,0), b(1,1), b(1,2),  
-         b(2,0), b(2,1), b(2,2)    }; 
-  const dReal centerQb[3] = {b.translation()[0],b.translation()[1], b.translation()[2]};
-
-  //extract affine3d
-  const dMatrix3 matrixQc = { 
-         c(0,0), c(0,1), c(0,2),  
-         c(1,0), c(1,1), c(1,2),  
-         c(2,0), c(2,1), c(2,2)    }; 
-  const dReal centerQc[3] = {c.translation()[0],c.translation()[1], c.translation()[2]};
-
-  STEP = 30; 
-
-
-
-  cout<< isValidScene(modelnames, model_poses);
-  
-
-
-  //auto mappedObject= m.find(modelnames[1]);
-  //set the scene
-  //translateObject(obj[0], centerQa, matrixQa);
-  //translateObject(mappedObject->second, centerQb, matrixQb);
-  //translateObject(obj[2], centerQc, matrixQc);
-  
- 
-
-  
-
-
-  
-
-
-  //fix this....show venkat?  ...just work on the hashmap stuff because u know ur gonna have to do that anyway...?
-  //closeDownODE();
-
-  
+  // destroy world
   dThreadingImplementationShutdownProcessing(threading);
   dThreadingFreeThreadPool(pool);
   dWorldSetStepThreadingImplementation(world, NULL, NULL);
@@ -1099,21 +1051,3 @@ int main (int argc, char **argv)
   return 0;
 }
 
-//Venkat's pseudo-code
-/*
-main() {
-SetScene(...)
-for (500 counts) {
-CheckSceneValid(scene)
-}
-SetScene(...)
-for (500 counts) {
-CheckSceneValid(...)
-}
-}
-
-CheckSceneValid(scene) {
-  bool EQUAl = ForwardSimulateScene(scene, NUM_TIMESTEPS, forward_simulated_scene);
-  return equAL;
-}
-*/
