@@ -14,7 +14,7 @@ class SceneValidator{
         / model_IDs is a subset of setModels's model list. 
         / model_poses sets the 6 DoF pose for each object.          
         */ 
-        bool isStable(std:vector<string> model_IDs, std:vector<Eigen:: Affine3d> model-poses) 
+        bool isValidScene(std:vector<string> model_IDs, std:vector<Eigen:: Affine3d> model-poses) 
 }
 
 
