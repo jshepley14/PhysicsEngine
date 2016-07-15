@@ -1,0 +1,30 @@
+sceneValidator: Most recent. Uses Eigen. doesn't -I ../../demo anymore
+
+g++ -std=c++11 list.cpp objLoader.cpp obj_parser.cpp string_extra.cpp sceneValidator.cpp -I /home/joeshepley/EigenTest/source_dir/ -I /home/joeshepley/ode-0.13.1/include/ode -I /home/joeshepley/ode-0.13.1/include/drawstuff  -L ode/src/libode.la -L drawstuff/src/libdrawstuff.la -l ode -l drawstuff -lGL -lGLU -lglut -lX11 -lpthread -o sceneValidator -w
+
+
+
+
+
+
+
+
+NOT LOADING A FILE:
+g++ -std=c++11 trimeshLoad.cpp -I /home/joeshepley/ode-0.13.1/include/ode -I /home/joeshepley/ode-0.13.1/include/drawstuff -I /home/joeshepley/ode-0.13.1/ode/demo -L ode/src/libode.la -L drawstuff/src/libdrawstuff.la -l ode -l drawstuff -lGL -lGLU -lglut -lX11 -lpthread -o meshLoad
+
+OBJTESTER2:
+g++ list.cpp objLoader.cpp obj_parser.cpp string_extra.cpp objTester2.cpp -o test -w
+
+OBJ2hEADER2:
+g++ list.cpp objLoader.cpp obj_parser.cpp string_extra.cpp obj2header.cpp -o test -w
+
+
+TRIMESHLOAD
+g++ -std=c++11 list.cpp objLoader.cpp obj_parser.cpp string_extra.cpp trimeshLoad.cpp -I /home/joeshepley/ode-0.13.1/include/ode -I /home/joeshepley/ode-0.13.1/include/drawstuff -I /home/joeshepley/ode-0.13.1/ode/demo -L ode/src/libode.la -L drawstuff/src/libdrawstuff.la -l ode -l drawstuff -lGL -lGLU -lglut -lX11 -lpthread -o meshLoad -w
+
+DEMO
+g++ -std=c++11 list.cpp objLoader.cpp obj_parser.cpp string_extra.cpp demo.cpp -I /home/joeshepley/ode-0.13.1/include/ode -I /home/joeshepley/ode-0.13.1/include/drawstuff -I /home/joeshepley/ode-0.13.1/ode/demo -L ode/src/libode.la -L drawstuff/src/libdrawstuff.la -l ode -l drawstuff -lGL -lGLU -lglut -lX11 -lpthread -o demo -w
+
+
+
+

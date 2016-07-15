@@ -1,0 +1,28 @@
+const int VertexCount = 8;
+const int IndexCount = 12 * 3;
+
+float Vertices[VertexCount * 3] = {
+	REAL(.2000), REAL(0.00), REAL(0.00),  
+	REAL(0.00), REAL(-.2000), REAL(0.00),  
+	REAL(0.00), REAL(0.00), REAL(0.00),  
+	REAL(.2000), REAL(-.2000), REAL(0.00),  
+	REAL(.2000), REAL(-.2000), REAL(.2000),  
+	REAL(0.00), REAL(-.2000), REAL(.2000),  
+	REAL(.2000), REAL(0.00), REAL(.2000),  
+	REAL(0.00), REAL(0.00), REAL(.2000)  
+};
+
+int Indices3[IndexCount / 3][3] = {
+	{0,1,2},
+	{1,0,3},
+	{4,1,3},
+	{1,4,5},
+	{0,4,3},
+	{4,0,6},
+	{4,7,5},
+	{7,4,6},
+	{7,1,5},
+	{1,7,2},
+	{7,0,2},
+	{0,7,6}
+};
