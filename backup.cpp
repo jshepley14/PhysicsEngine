@@ -20,12 +20,13 @@
 //remember the importance of num++ or num in general, creating and deleting
 //find the right balance for friction
 /**********************************************/
+
+#include "sceneValidator.h"
 #include <map>
 #include <cassert>
 #include <ode/ode.h>
 #include <drawstuff/drawstuff.h>
 #include <string.h>
-#include <iostream>
 #include <fstream>
 #include <cmath>
 #include <chrono>  //used for timing code
@@ -56,7 +57,7 @@
 #define MAX_CONTACTS 64		// maximum number of contact points per body
 using namespace std;
 
-//#define DRAW  //used to switch on or off the drawing of the scene
+
 static int HEIGHT =500;
 static int WIDTH = 1000;
 
@@ -65,13 +66,37 @@ static int WIDTH = 1000;
 
 //Some COUNT, TIMESTEP pairs: 6, 0.1  and 20, 0.05
 //static equilibrium constants
+static int STEP1=6;
+static int STEP2=14;
+static int STEP3=20;
+static int STEP4=110;
+static double GRAVITYx = 0;
+static double GRAVITYy = 0;
+static double GRAVITYz = -0.5;     // yes, this is not -9.8, but this was what the default trimesh demo had 
+static double PLANEa = 0;          // Equation of a plane: a*x+b*y+c*z = d The nomral vector must have legnth 1
+static double PLANEb = 0;
+static double PLANEc = 1;           
+static double PLANEd = 0;          
+static double THRESHHOLD = 0.08;   //amount objects allowed to move while still being marked as in static equilibrium
+static double FRICTON_mu =  1.0;   //if you set this to 0 it will be very slippery
+static double FRICTON_mu2 =  0.0;  //changing this doesn't seem to do much
+static double BOUNCE = 0.0;        //change the bounciness
+static double BOUNCE_vel = 0.0;    //change the bounciness speed
+static double SOFT_CFM = 0.01;     //makes "system more numerically robust" according to ODE manual. Not 100% sure what it does... The current number is from a default demo.
+static bool DRAW = false;          //used to switch on or off the drawing of the scene
+static bool PRINT_START_POS = false;  //print an object's intial x,y,z center
+static bool PRINT_END_POS   = false;  //print an object's final x,y,z center
+static bool PRINT_DELTA_POS = false;  //print an object's delta x,y,z for its center 
+static bool PRINT_CHECKER_RESULT = false; //print the 
+
 static int GlobalCounter = 0;
 static int counter = 0;          //iterator which will reach COUNT
 static int dsSTEP=100;
 static int STEP = 20; //20?            //how long until we want to wait to check satic equlibrium?
-static double THRESHHOLD = 0.08;  //how much movement is allowed
-//static double GRAVITY = -19.8;    
+  //how much movement is allowed
+    
 static double TIMESTEP = 0.1;
+
 
 //Time step originally was at 0.01, but we may
 //be able to increase this making calculations faster
@@ -255,11 +280,11 @@ static void nearCallback (void *, dGeomID o1, dGeomID o2)
   dContact contact[MAX_CONTACTS];   // up to MAX_CONTACTS contacts per box-box
   for (i=0; i<MAX_CONTACTS; i++) {
     contact[i].surface.mode = dContactBounce | dContactSoftCFM;
-    contact[i].surface.mu = 1; //find the right balance //dInfinity;
-    contact[i].surface.mu2 = 0;
-    contact[i].surface.bounce = 0.0; //0.1;
-    contact[i].surface.bounce_vel = 0.0; // 0.1;
-    contact[i].surface.soft_cfm = 0.01;
+    contact[i].surface.mu = FRICTON_mu; //find the right balance //dInfinity;
+    contact[i].surface.mu2 = FRICTON_mu2;
+    contact[i].surface.bounce = BOUNCE; //0.1;
+    contact[i].surface.bounce_vel = BOUNCE_vel; // 0.1;
+    contact[i].surface.soft_cfm = SOFT_CFM;
   }
   if (int numc = dCollide (o1,o2,MAX_CONTACTS,&contact[0].geom,
 			   sizeof(dContact))) {
@@ -299,19 +324,21 @@ static bool inStaticEquilibrium(MyObject &object){
     double deltaX = std::abs(startX - endX);
     double deltaY = std::abs(startY - endY); 
     double deltaZ = std::abs(startZ - endZ);
-    //cout << "counter = " << COUNT  << " \n" << endl;
-    //cout << "THRESHHOLD : " << THRESHHOLD << " \n" << endl;
-    //Check if object moved since initialization
-    //cout<<"          X            Y            Z"  <<endl;
-    //cout<<"Start: "<<startX<<", "<<startY<<", "<<startZ<<endl;
-    //cout<<"  End: "<<endX<<", "<<endY<<", "<<endZ<<endl;
-    //cout<<"Delta: "<<deltaX<<", "<<deltaY<<", "<<deltaZ<<endl;
+
+    if (PRINT_START_POS){
+      cout<<"Start: "<<startX<<", "<<startY<<", "<<startZ<<endl;
+    }
+    if (PRINT_END_POS){
+      cout<<"  End: "<<endX<<", "<<endY<<", "<<endZ<<endl;
+    }
+    if (PRINT_DELTA_POS){
+      cout<<"Delta: "<<deltaX<<", "<<deltaY<<", "<<deltaZ<<endl;
+    }
+    
     if ( deltaX > THRESHHOLD || deltaY > THRESHHOLD || deltaZ > THRESHHOLD){
         return false;
-        //cout << "FALSE: Not in static equilibrium" << endl;
     } else{ 
         return true;
-        //cout << "TRUE: Is in static equilibrium" << endl;
     }
 }
  
@@ -329,10 +356,15 @@ static bool isValid(std::vector<string> modelnames){
        } 
     } 
     if (stable == true){
-      //cout << "TRUE"<<endl;
+      if(PRINT_CHECKER_RESULT){
+        cout << "TRUE"<<endl;
+      }
       return true;
     } else{
-      //cout << "FALSE"<<endl;
+      if(PRINT_CHECKER_RESULT){
+        cout << "FALSE"<<endl;
+      }
+      
       return false;
     }
 }
@@ -739,11 +771,12 @@ static void simLoop (int pause)
 
 
 
-  #ifdef DRAW
+  
+  if(DRAW){
   dsSetColor (1,1,0);
   dsSetTexture (DS_WOOD);
-  #else
-  #endif
+  } 
+  
 
   for (int i=0; i<num; i++) {
     for (int j=0; j < GPB; j++) {
@@ -762,7 +795,7 @@ static void simLoop (int pause)
           const dReal* Pos = dGeomGetPosition(obj[i].geom[j]);
           const dReal* Rot = dGeomGetRotation(obj[i].geom[j]);
   
-        #ifdef DRAW
+        if (DRAW) {
         for (int ii = 0; ii < obj[i].indCount; ii++) {
             const dReal v[9] = { // explicit conversion from float to dReal
               obj[i].vertexDrawVec[obj[i].indexDrawVec[ii][0] * 3 + 0],
@@ -777,8 +810,8 @@ static void simLoop (int pause)
             };
             dsDrawTriangle(Pos, Rot, &v[0], &v[3], &v[6], 1);
           }
-          #else
-          #endif
+        }
+         
 
       // tell the tri-tri collider the current transform of the trimesh --
           // this is fairly important for good results.     
@@ -834,7 +867,7 @@ void drawstuffsimLoop(){
 }
 
 
-void setModels(std::vector<string> modelnames, std::vector<string> filenames){
+void SceneValidator::setModels(std::vector<string> modelnames, std::vector<string> filenames){
 
     //set the data in an obj array
    if( modelnames.size() != filenames.size()){
@@ -860,22 +893,110 @@ void setModels(std::vector<string> modelnames, std::vector<string> filenames){
 
 static bool isStableStill(std::vector<string> modelnames, int step){
 
-    #ifdef DRAW
-    counter=0;
-    dsSTEP=step; //200;
-    drawstuffsimLoop();
-    #else
-    for(int i = 0; i <= step; i++) {
-      simLoop(0);
+    
+    if (DRAW){
+      counter=0;
+      dsSTEP=step; //200;
+      drawstuffsimLoop();
+    } else {
+      for(int i = 0; i <= step; i++) {
+        simLoop(0);
+       }
     }
-    #endif
+    
     return isValid(modelnames);
+}
+
+
+
+
+
+//try to set some parameters
+//eventually make this SceneValidator::setParams
+//try to see how to make it return false if you can't set the parameter
+bool  SceneValidator::setParams(std::string param_name, double param_value){
+     
+        
+      
+
+      if( param_name.compare("STEP1") == 0 ){     
+        STEP1 = param_value;
+        return true;
+      } else if( param_name.compare("STEP2") == 0 ){    
+        STEP2 = param_value;
+        return true;
+      } else if( param_name.compare("STEP3") == 0 ){       
+        STEP3 = param_value;
+        return true;
+      } else if( param_name.compare("STEP4") == 0 ){    
+        STEP4 = param_value;
+        return true;
+      } else if( param_name.compare("GRAVITYx") == 0 ){    
+        GRAVITYx = param_value;
+        return true;
+      } else if( param_name.compare("GRAVITYy") == 0 ){   
+        GRAVITYy = param_value;
+        return true;
+      } else if( param_name.compare("GRAVITYz") == 0 ){  
+        GRAVITYz = param_value;
+        return true;
+      } else if( param_name.compare("PLANEa") == 0 ){   
+        PLANEa = param_value;
+        return true;
+      } else if( param_name.compare("PLANEb") == 0 ){
+        PLANEb = param_value;
+        return true;
+      } else if( param_name.compare("PLANEc") == 0 ){ 
+        PLANEc = param_value;
+        return true;
+      } else if( param_name.compare("PLANEd") == 0 ){    
+        PLANEd = param_value;
+        return true;
+      } else if( param_name.compare("THRESHHOLD") == 0 ){   
+        THRESHHOLD = param_value;
+        return true;
+      } else if( param_name.compare("FRICTON_mu") == 0 ){      
+        FRICTON_mu = param_value;
+        return true;
+      } else if( param_name.compare("FRICTON_mu2") == 0 ){   
+        FRICTON_mu2 = param_value;
+        return true;
+      } else if( param_name.compare("BOUNCE") == 0 ){     
+        BOUNCE = param_value;
+        return true;
+      } else if( param_name.compare("BOUNCE_vel") == 0 ){    
+        BOUNCE_vel = param_value;
+        return true;
+      } else if( param_name.compare("SOFT_CFM") == 0 ){    
+        SOFT_CFM = param_value;
+        return true;
+      } else if( param_name.compare("DRAW") == 0 ){    
+        DRAW = param_value;
+        return true;
+      } else if( param_name.compare("PRINT_START_POS") == 0 ){    
+        PRINT_START_POS = param_value;
+        return true;
+      } else if( param_name.compare("PRINT_END_POS") == 0 ){    
+        PRINT_END_POS = param_value;
+        return true;
+      } else if( param_name.compare("PRINT_DELTA_POS") == 0 ){    
+        PRINT_DELTA_POS = param_value;
+        return true;
+      } else if( param_name.compare("PRINT_CHECKER_RESULT") == 0 ){    
+        PRINT_CHECKER_RESULT = param_value;
+        return true;
+      } else {
+        cout<<"Invalid parameter name: "<<param_name;
+        return false;
+      }
+      
+
 }
 
 
 //To Do:
 // acess everything from the hashmap..or think of something else
-bool isValidScene(std::vector<string> modelnames, std::vector<Eigen::Affine3d> model_poses){
+bool SceneValidator::isValidScene(std::vector<string> modelnames, std::vector<Eigen::Affine3d> model_poses){
     //set all the Objects's positions
     num = modelnames.size();
     for (int i =0; i < num; i++){
@@ -891,23 +1012,55 @@ bool isValidScene(std::vector<string> modelnames, std::vector<Eigen::Affine3d> m
        
     }
     
-  
-    if (! isStableStill(modelnames, 6)){
+    
+    if (! isStableStill(modelnames, STEP1)){
          return false;
     } else
-    if (! isStableStill(modelnames, 14)){
+    if (! isStableStill(modelnames, STEP2)){
          return false;
     } else
-    if (! isStableStill(modelnames, 20)){
+    if (! isStableStill(modelnames, STEP3)){
          return false;
     } else
-    if (! isStableStill(modelnames, 110)){
+    if (! isStableStill(modelnames, STEP4)){
          return false;
     } 
     
     else{
          return true;
     }
+}
+
+
+SceneValidator::SceneValidator(){
+  // create world
+  dInitODE2(0);
+  world = dWorldCreate();
+  space = dSimpleSpaceCreate(0);
+  contactgroup = dJointGroupCreate (0);
+  dWorldSetGravity (world,GRAVITYx,GRAVITYy,GRAVITYz);
+  dWorldSetCFM (world,1e-5);
+  dCreatePlane (space,PLANEa,PLANEb,PLANEc,PLANEd); 
+  dAllocateODEDataForThread(dAllocateMaskAll);
+  threading = dThreadingAllocateMultiThreadedImplementation();
+  pool = dThreadingAllocateThreadPool(4, 0, dAllocateFlagBasicData, NULL);
+  //dThreadingThreadPoolID pool = dThreadingAllocateThreadPool(4, 0, dAllocateFlagBasicData, NULL);
+  dThreadingThreadPoolServeMultiThreadedImplementation(pool, threading);
+  dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
+}
+
+
+SceneValidator::~SceneValidator(){
+  
+  // destroy world
+  dThreadingImplementationShutdownProcessing(threading);
+  dThreadingFreeThreadPool(pool);
+  dWorldSetStepThreadingImplementation(world, NULL, NULL);
+  dThreadingFreeImplementation(threading);
+  dJointGroupDestroy (contactgroup);
+  dSpaceDestroy (space);
+  dWorldDestroy (world);
+  dCloseODE();
 }
 
 
@@ -942,6 +1095,7 @@ void setUpODE(){
   dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
 }
 */
+
 
 
 /*
@@ -994,60 +1148,33 @@ int main (int argc, char **argv)
   q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
   q.normalize();
   aq = Eigen::Affine3d(q);
-  t =  (Eigen::Translation3d(Eigen::Vector3d(-2,0, 3.59)));
+  t =  (Eigen::Translation3d(Eigen::Vector3d(-2,0, 1.59)));
   Eigen::Affine3d a2 = (t*aq); 
   
   vector<Eigen::Affine3d> model_poses2 = {a2,b,c};  //teacup falling from the sky
 // Here's all the input^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-  /* The following is what would go in main() */
-
-  // create world
-  dInitODE2(0);
-  world = dWorldCreate();
-  space = dSimpleSpaceCreate(0);
-  contactgroup = dJointGroupCreate (0);
-  dWorldSetGravity (world,0,0,-0.5);
-  dWorldSetCFM (world,1e-5);
-  dCreatePlane (space,0,0,1,0); 
-  dThreadingImplementationID threading = dThreadingAllocateMultiThreadedImplementation();
-  dThreadingThreadPoolID pool = dThreadingAllocateThreadPool(4, 0, dAllocateFlagBasicData, NULL);
-  dThreadingThreadPoolServeMultiThreadedImplementation(pool, threading);
-  dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
 
 
-  // Our two functions
-  setModels(modelnames, filenames);
+/* The following is what would go in main() */
 
-  int NUMBERofSCENES=1000;
-  int SCENESperLOOP=2;
-  int NUMBERofLOOPS = NUMBERofSCENES/SCENESperLOOP;
-  startTime = chrono::steady_clock::now();
-  for (int i =0; i <= NUMBERofLOOPS; i++) {
+  SceneValidator scene;
+  scene.setParams("DRAW", true);
+  scene.setParams("PRINT_CHECKER_RESULT", true);
+ 
+ 
+  // API functions
+  scene.setModels(modelnames, filenames);
 
-     isValidScene(modelnames, model_poses);
-     isValidScene(modelnames, model_poses2);
-     
-  }
-  endTime = chrono::steady_clock::now();
-  auto diff = endTime - startTime;
-  cout <<"Time: "<< chrono::duration <double, milli> (diff).count() << " ms" << endl;
-  cout<< "Scenes: "<<NUMBERofSCENES<<endl;
-  cout<<" Time per Scene: "<<(chrono::duration <double, milli> (diff).count())/NUMBERofSCENES<<"ms"<<endl;
+  scene.isValidScene(modelnames, model_poses);
+  scene.isValidScene(modelnames, model_poses2);
 
-  // destroy world
-  dThreadingImplementationShutdownProcessing(threading);
-  dThreadingFreeThreadPool(pool);
-  dWorldSetStepThreadingImplementation(world, NULL, NULL);
-  dThreadingFreeImplementation(threading);
-  dJointGroupDestroy (contactgroup);
-  dSpaceDestroy (space);
-  dWorldDestroy (world);
-  dCloseODE();
-
+  
+ 
 
 
   return 0;
 }
+
 
