@@ -1,1 +1,0 @@
-g++ StaticEqChecker.cpp -I /home/joeshepley/ode-0.13.1/include/ode -I /home/joeshepley/ode-0.13.1/include/drawstuff -I /home/joeshepley/ode-0.13.1/ode/demo -L ode/src/libode.la -L drawstuff/src/libdrawstuff.la -l ode -l drawstuff -lGL -lGLU -lglut -lX11 -lpthread -o stcEqChkr
