@@ -3,6 +3,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <ode/ode.h>
+#ifndef SCENEVALIDATOR_H
+#define SCENEVALIDATOR_H
 
 /* Do I need these?
 #ifndef sceneValidator.h
@@ -13,10 +15,12 @@ class SceneValidator{
     private:
      dThreadingThreadPoolID pool;
      dThreadingImplementationID threading;
+     
 
     public:
-        SceneValidator();
-        ~SceneValidator();
+	SceneValidator(double GRAVITYx, double GRAVITYy, double GRAVITYz, double PLANEa, double PLANEb, double PLANEc, double PLANEd);  //custom constructor
+        SceneValidator();   //default constructor
+        ~SceneValidator();  //destructor
 
         /*  Allows the user to set certain parameters such as the THRESHOLD, Gravity,
         /   number of checks, number of checks per step, DRAW, printing out certain things etc?
@@ -39,5 +43,7 @@ class SceneValidator{
         bool isValidScene(std::vector<std::string> modelnames, std::vector<Eigen::Affine3d> model_poses);
          
 };
+
+#endif
 
 

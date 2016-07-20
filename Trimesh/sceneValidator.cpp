@@ -1,13 +1,16 @@
-//Joe Shepley CMU 2016
-//Static Equilibrium tester in ODE physics engine
-//
-// ***^^^PRESS N FOR A "RESET", PRESS J FOR A FALLING OBJECT^^^***
+//     Author:  Joe Shepley 
+//    Contact:  jshepley14@gmail.com
+//   Location:  Carnegie-Mellon Robotics Institute   Pittsburgh, PA
+//       Date:  July 2016
+//Description:  This code provides functions which can be used to check if an set of objects are in static
+//              equilibrium or not.  The method to do this relies on in Open Dynamics Engine, a physics engine.
+//    Gitthub:  https://github.com/jshepley14/PhysicsEngine 
 //
 /****************************************************/
 
 
 
-#include "sceneValidator.h"
+#include "sceneValidator.h"       //contains the header file for this .cpp file
 #include <map>
 #include <cassert>              
 #include <ode/ode.h>              //main physics engine library
@@ -37,19 +40,19 @@
 #endif
 
 // some constants
-#define NUM 200			// max number of objects
+#define NUM 200			    // max number of objects
 #define DENSITY (5.0)		// density of all objects
-#define GPB 3			// maximum number of geometries per body
-#define MAX_CONTACTS 64		// maximum number of contact points per body
+#define GPB 3		      	// maximum number of geometries per body
+#define MAX_CONTACTS 64	// maximum number of contact points per body
 using namespace std;
 
 
 
 //Variables that can be set in setParams()
-static int STEP1=6;
-static int STEP2=14;
-static int STEP3=20;
-static int STEP4=110;
+static int STEP1=6;               //amount of simulation steps used in check #1 
+static int STEP2=14;              //amount of simulation steps used in check #2
+static int STEP3=20;              //amount of simulation steps used in check #3
+static int STEP4=110;             //amount of simulation steps used in check #4
 static double GRAVITYx = 0;
 static double GRAVITYy = 0;
 static double GRAVITYz = -0.5;     // yes, this is not -9.8, but this was what the default trimesh demo had 
@@ -59,8 +62,8 @@ static double PLANEc = 1;
 static double PLANEd = 0;          
 static double THRESHHOLD = 0.08;   //amount objects allowed to move while still being marked as in static equilibrium
 static double TIMESTEP = 0.1;      //controls how far each step is taken
-static double FRICTON_mu =  1.0;   //if you set this to 0 it will be very slippery
-static double FRICTON_mu2 =  0.0;  //changing this doesn't seem to do much
+static double FRICTION_mu =  1.0;   //if you set this to 0 it will be very slippery
+static double FRICTION_mu2 =  0.0;  //changing this doesn't seem to do much
 static double BOUNCE = 0.0;        //change the bounciness
 static double BOUNCE_vel = 0.0;    //change the bounciness speed
 static double SOFT_CFM = 0.01;     //makes "system more numerically robust" according to ODE manual. Not 100% sure what it does... The current number is from a default demo.
@@ -72,14 +75,14 @@ static bool PRINT_CHECKER_RESULT = false; //print the
 
 
 
-//timer variables part of c++11 
+//timer variables part of c++11 ...maybe use this for a timing function?
 static chrono::steady_clock::time_point startTime, endTime;  //variables used for timing purposes
 
 //variables used when DRAW = true
-static int counter = 0;         
-static int dsSTEP=100;
-static int HEIGHT =500;
-static int WIDTH = 1000;
+static int counter = 0;   //used within simulation to count until dsSTEP, indicates termination of drawing window      
+static int dsSTEP=100;    //default simulation step number when drawing a scene
+static int HEIGHT =500;   //window height
+static int WIDTH = 1000;  //window width
  
     
 
@@ -136,8 +139,8 @@ static void nearCallback (void *, dGeomID o1, dGeomID o2)
   dContact contact[MAX_CONTACTS];   // up to MAX_CONTACTS contacts per box-box
   for (i=0; i<MAX_CONTACTS; i++) {
     contact[i].surface.mode = dContactBounce | dContactSoftCFM;
-    contact[i].surface.mu = FRICTON_mu; 
-    contact[i].surface.mu2 = FRICTON_mu2;
+    contact[i].surface.mu = FRICTION_mu; 
+    contact[i].surface.mu2 = FRICTION_mu2;
     contact[i].surface.bounce = BOUNCE; 
     contact[i].surface.bounce_vel = BOUNCE_vel; 
     contact[i].surface.soft_cfm = SOFT_CFM;
@@ -498,25 +501,25 @@ bool  SceneValidator::setParams(std::string param_name, double param_value){
         STEP4 = param_value;
         return true;
       } else if( param_name.compare("GRAVITYx") == 0 ){    
-        GRAVITYx = param_value;
+        cout<<"Need to set GRAVITYx in the custom SceneValidator constructor.  See sceneValidator.h for how to do that";
         return true;
       } else if( param_name.compare("GRAVITYy") == 0 ){   
-        GRAVITYy = param_value;
+        cout<<"Need to set GRAVITYy in the custom SceneValidator constructor.  See sceneValidator.h for how to do that";
         return true;
       } else if( param_name.compare("GRAVITYz") == 0 ){  
-        GRAVITYz = param_value;
+        cout<<"Need to set GRAVITYz in the custom SceneValidator constructor.  See sceneValidator.h for how to do that";
         return true;
       } else if( param_name.compare("PLANEa") == 0 ){   
-        PLANEa = param_value;
+        cout<<"Need to set PLANEa in the custom SceneValidator constructor.  See sceneValidator.h for how to do that";
         return true;
       } else if( param_name.compare("PLANEb") == 0 ){
-        PLANEb = param_value;
+        cout<<"Need to set PLANEb in the custom SceneValidator constructor.  See sceneValidator.h for how to do that";
         return true;
       } else if( param_name.compare("PLANEc") == 0 ){ 
-        PLANEc = param_value;
+        cout<<"Need to set PLANEc in the custom SceneValidator constructor.  See sceneValidator.h for how to do that";
         return true;
       } else if( param_name.compare("PLANEd") == 0 ){    
-        PLANEd = param_value;
+        cout<<"Need to set PLANEd in the custom SceneValidator constructor.  See sceneValidator.h for how to do that";
         return true;
       } else if( param_name.compare("THRESHHOLD") == 0 ){   
         THRESHHOLD = param_value;
@@ -524,11 +527,11 @@ bool  SceneValidator::setParams(std::string param_name, double param_value){
       } else if( param_name.compare("TIMESTEP") == 0 ){   
         TIMESTEP = param_value;
         return true;
-      } else if( param_name.compare("FRICTON_mu") == 0 ){      
-        FRICTON_mu = param_value;
+      } else if( param_name.compare("FRICTION_mu") == 0 ){      
+        FRICTION_mu = param_value;
         return true;
-      } else if( param_name.compare("FRICTON_mu2") == 0 ){   
-        FRICTON_mu2 = param_value;
+      } else if( param_name.compare("FRICTION_mu2") == 0 ){   
+        FRICTION_mu2 = param_value;
         return true;
       } else if( param_name.compare("BOUNCE") == 0 ){     
         BOUNCE = param_value;
@@ -578,16 +581,16 @@ bool SceneValidator::isValidScene(std::vector<string> modelnames, std::vector<Ei
     }
     
     //complete series of checks to see if scene is still stable or not
-    if (!isStableStill(modelnames, STEP1)){
+    if (!isStableStill(modelnames, STEP1)){   //check #1
          return false;
     } else
-    if (!isStableStill(modelnames, STEP2)){
+    if (!isStableStill(modelnames, STEP2)){   //check #2
          return false;
     } else
-    if (!isStableStill(modelnames, STEP3)){
+    if (!isStableStill(modelnames, STEP3)){   //check #3
          return false;
     } else
-    if (!isStableStill(modelnames, STEP4)){
+    if (!isStableStill(modelnames, STEP4)){   //check #4
          return false;
     }     
     else{
@@ -595,7 +598,25 @@ bool SceneValidator::isValidScene(std::vector<string> modelnames, std::vector<Ei
     }
 }
 
-//constuctor
+// constuctor  TO DO: add the rest of the parameters? add man many other constructors??
+SceneValidator::SceneValidator(double GRAVITYx, double GRAVITYy, double GRAVITYz, double PLANEa, double PLANEb, double PLANEc, double PLANEd){
+  // create threading world
+  dInitODE2(0);
+  world = dWorldCreate();
+  space = dSimpleSpaceCreate(0);
+  contactgroup = dJointGroupCreate (0);
+  dWorldSetGravity (world,GRAVITYx,GRAVITYy,GRAVITYz);
+  dWorldSetCFM (world,1e-5);
+  dCreatePlane (space,PLANEa,PLANEb,PLANEc,PLANEd); 
+  dAllocateODEDataForThread(dAllocateMaskAll);
+  threading = dThreadingAllocateMultiThreadedImplementation();
+  pool = dThreadingAllocateThreadPool(4, 0, dAllocateFlagBasicData, NULL);
+  dThreadingThreadPoolServeMultiThreadedImplementation(pool, threading);
+  dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
+}
+
+
+//default constuctor
 SceneValidator::SceneValidator(){
   // create threading world
   dInitODE2(0);
@@ -624,83 +645,3 @@ SceneValidator::~SceneValidator(){
   dWorldDestroy (world);
   dCloseODE();
 }
-
-
-
-
-
-
-int main (int argc, char **argv)
-{
-  
-
- // Here's all the input***********************************************************************************************************
-  vector<string> filenames = {"/home/joeshepley/Projects/PhysicsEngine/Trimesh/object_files/teacup.obj",
-                            "/home/joeshepley/Projects/PhysicsEngine/Trimesh/object_files/milk_carton.obj",
-                             "/home/joeshepley/Projects/PhysicsEngine/Trimesh/object_files/red_mug.obj"};
-  
-  vector<string> modelnames = {"teacup", "milk_carton", "mug"};
-  
-  //make affine3d's
-  Eigen::Quaterniond q;  
-  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
-  q.normalize();
-  Eigen::Affine3d aq = Eigen::Affine3d(q);
-  Eigen::Affine3d t(Eigen::Translation3d(Eigen::Vector3d(-2.5,0, 1.59)));
-  Eigen::Affine3d a = (t*aq); 
-    
-  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
-  q.normalize();
-  aq = Eigen::Affine3d(q);
-  t = (Eigen::Translation3d(Eigen::Vector3d(2,0,1.1)));
-  Eigen::Affine3d b = (t*aq); 
-    
-  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
-  q.normalize();
-  aq = Eigen::Affine3d(q);
-  t =  (Eigen::Translation3d(Eigen::Vector3d(-2,0,0.66)));
-  Eigen::Affine3d c = (t*aq); 
-
-  vector<Eigen::Affine3d> model_poses = {a,b,c};  //unbalanced teacup on mug
-
-  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
-  q.normalize();
-  aq = Eigen::Affine3d(q);
-  t =  (Eigen::Translation3d(Eigen::Vector3d(-2,0, 1.59)));
-  Eigen::Affine3d a2 = (t*aq); 
-  
-  vector<Eigen::Affine3d> model_poses2 = {a2,b,c};  //teacup falling from the sky
-// Here's all the input^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-
-
-
-
-
-/* The following is what would go in main() */
-
-  SceneValidator scene;
-  scene.setParams("DRAW", true);
-  scene.setParams("PRINT_CHECKER_RESULT", true);
- 
- 
-  // API functions
-  scene.setModels(modelnames, filenames);
-
-  scene.isValidScene(modelnames, model_poses);
-  scene.isValidScene(modelnames, model_poses2);
-
-  
- 
-
-
-  return 0;
-}
-
-
-
-
-
-
-
