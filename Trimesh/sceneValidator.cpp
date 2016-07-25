@@ -1,6 +1,7 @@
+/****************************************************/
 //     Author:  Joe Shepley 
 //    Contact:  jshepley14@gmail.com
-//   Location:  Carnegie-Mellon Robotics Institute   Pittsburgh, PA
+//   Location:  Carnegie Mellon University Robotics Institute  
 //       Date:  July 2016
 //Description:  This code provides functions which can be used to check if an set of objects are in static
 //              equilibrium or not.  The method to do this relies on in Open Dynamics Engine, a physics engine.
@@ -9,21 +10,23 @@
 /****************************************************/
 
 
-
+/* headers */
 #include "sceneValidator.h"       //contains the header file for this .cpp file
-#include <map>
-#include <cassert>              
+#include <map>                    //used to make hashmap
+#include <cassert>                //used to make hashmap
 #include <ode/ode.h>              //main physics engine library
 #include <drawstuff/drawstuff.h>  //this is the graphics library
-#include <string.h>
-#include <fstream>  
-#include <cmath>   
+#include <string.h>               //allows strings to be used
+#include <fstream>                //allows some extra printing functions
+#include <cmath>                  //allows math functions like absolute value
 #include <chrono>                 //used for timing code
-#include <stdio.h>
-#include <iostream>
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
-#include "objLoader.h"           //used for parsing .obj file
+#include <stdio.h>                //common and neccesary c++ library
+#include <iostream>               //used for printing
+#include <Eigen/Dense>            //used for dealing with Eigen data types
+#include <Eigen/Geometry>         //used for dealing with Eigen data types
+#include "objLoader.h"            //used for parsing .obj file
+
+/*definitions */
 
 #ifdef _MSC_VER
 #pragma warning(disable:4244 4305)  // for VC++, no precision loss complaints
@@ -47,90 +50,86 @@
 using namespace std;
 
 
+/* variables */
 
 //Variables that can be set in setParams()
-static int STEP1=6;               //amount of simulation steps used in check #1 
-static int STEP2=14;              //amount of simulation steps used in check #2
-static int STEP3=20;              //amount of simulation steps used in check #3
-static int STEP4=110;             //amount of simulation steps used in check #4
+static double BOUNCE = 0.0;            //change the bounciness
+static double BOUNCE_vel = 0.0;        //change the bounciness speed
+static int    DEFAULT_SCALE = 100;     //The default value each .obj files data is scaled down by
+static bool   DRAW = false;            //used to switch on or off the drawing of the scene
+static double FRICTION_mu =  1.0;      //if you set this to 0 it will be very slippery
+static double FRICTION_mu2 =  0.0;     //changing this doesn't seem to do much
 static double GRAVITYx = 0;
 static double GRAVITYy = 0;
-static double GRAVITYz = -0.5;     // yes, this is not -9.8, but this was what the default trimesh demo had 
-static double PLANEa = 0;          // Equation of a plane: a*x+b*y+c*z = d The normal vector must have legnth 1
+static double GRAVITYz = -0.5;         // yes, this is not -9.8, but this was what the default trimesh demo had 
+static double PLANEa = 0;              // Equation of a plane: a*x+b*y+c*z = d The normal vector must have length 1
 static double PLANEb = 0;
 static double PLANEc = 1;           
-static double PLANEd = 0;          
-static double THRESHHOLD = 0.08;   //amount objects allowed to move while still being marked as in static equilibrium
-static double TIMESTEP = 0.1;      //controls how far each step is taken
-static double FRICTION_mu =  1.0;   //if you set this to 0 it will be very slippery
-static double FRICTION_mu2 =  0.0;  //changing this doesn't seem to do much
-static double BOUNCE = 0.0;        //change the bounciness
-static double BOUNCE_vel = 0.0;    //change the bounciness speed
-static double SOFT_CFM = 0.01;     //makes "system more numerically robust" according to ODE manual. Not 100% sure what it does... The current number is from a default demo.
-static bool DRAW = false;          //used to switch on or off the drawing of the scene
-static bool PRINT_START_POS = false;  //print an object's intial x,y,z center
-static bool PRINT_END_POS   = false;  //print an object's final x,y,z center
-static bool PRINT_DELTA_POS = false;  //print an object's delta x,y,z for its center 
-static bool PRINT_CHECKER_RESULT = false; //print the 
+static double PLANEd = 0; 
+static bool   PRINT_START_POS = false; //print an object's intial x,y,z center
+static bool   PRINT_END_POS   = false; //print an object's final x,y,z center
+static bool   PRINT_DELTA_POS = false; //print an object's delta x,y,z for its center 
+static bool   PRINT_CHKR_RSLT = false; //print the result of check1, check2 etc..
+static double SOFT_CFM = 0.01;         //makes "system more numerically robust" according to ODE manual. Not 100% sure what it does... The current number is from a default demo.
+static int    STEP1=6;                 //amount of simulation steps used in check #1 
+static int    STEP2=14;                //amount of simulation steps used in check #2
+static int    STEP3=20;                //amount of simulation steps used in check #3
+static int    STEP4=110;               //amount of simulation steps used in check #4         
+static double THRESHHOLD = 0.08;       //amount objects allowed to move while still being marked as in static equilibrium
+static double TIMESTEP = 0.05;         //controls how far each step is taken
 
-
-
-//timer variables part of c++11 ...maybe use this for a timing function?
-static chrono::steady_clock::time_point startTime, endTime;  //variables used for timing purposes
+//variables that can be set in setScale();
+static bool SET_CUSTOM_SCALE = false;  //allows user to scale the object 
+static int ObjectToScale;           //scale's the 0th object in the array of objects
+static double scale;                 //default scale factor
 
 //variables used when DRAW = true
-static int counter = 0;   //used within simulation to count until dsSTEP, indicates termination of drawing window      
+static int counter=0;   //used within simulation to count until dsSTEP, indicates termination of drawing window      
 static int dsSTEP=100;    //default simulation step number when drawing a scene
-static int HEIGHT =500;   //window height
-static int WIDTH = 1000;  //window width
+static int HEIGHT=500;   //window height
+static int WIDTH=1000;  //window width
  
-    
 
-// dynamics and collision objects
+/* dynamics and collision objects */
 
 struct MyObject {
   dBodyID body;			 // the body
   dGeomID geom[GPB]; // geometries representing this body
-
   // Trimesh only - double buffered matrices for 'last transform' setup
   dReal matrix_dblbuff[ 16 * 2 ];
-  int last_matrix_index;
-
-  int IDnumber;      //the number of the object        
-  dReal center[3];    //the center x,y,z coordinates
-  int indCount;      //number of triangles (indices)
-  int vertCount;     //number of vertices
-  vector< vector<int> > indexDrawVec;
-  vector<int> indexGeomVec;
-  vector<float> vertexDrawVec;
-  vector<float> vertexGeomVec;
-  vector<float> centerOfMass;
+  int last_matrix_index;      
+  dReal center[3];                       //the center x,y,z coordinates
+  int indCount;                          //number of triangles (indices)
+  int vertCount;                         //number of vertices
+  vector< vector<int> > indexDrawVec;    //index list for Trimesh, but only used when drawing the Trimesh
+  vector<int> indexGeomVec;              //index list for the Trimesh, used all the time for Trimesh
+  vector<float> vertexDrawVec;           //vertex list for Trimesh, but only used when drawing the Trimesh
+  vector<float> vertexGeomVec;           //vetex list for the Trimesh, used all the time for Trimesh
+  vector<float> centerOfMass; 
 };
 
-
-
-static int num=0;		// number of objects in simulation
-static int nextobj=0;		// next object to recycle if num==NUM
-static dWorldID world;
-static dSpaceID space;
-static MyObject obj[NUM];
-static dJointGroupID contactgroup;
-static int selected = -1;	// selected object
-static int show_aabb = 0;	// show geom AABBs?
-static int show_contacts = 0;	// show contact points?
-static int random_pos = 1;	// drop objects from random position?
-static std::map<std::string, MyObject> m;
-typedef dReal dVector3R[3];
+//more variables, not really parameters though  
+static int num=0;	                         //number of objects in simulation
+static int nextobj=0;		                   //next object to recycle if num==NUM
+static dWorldID world;                     //define the world in which simulation takes place 
+static dSpaceID space;                     //define the space in which simulation takes place
+static MyObject obj[NUM];                  //array of MyObject's 
+static dJointGroupID contactgroup;         //define the contactgroup in which objects have their contacts
+static int show_contacts = 0;	             //show contact points
+static int random_pos = 1;	               //drop objects from random position?
+static std::map<std::string, MyObject> m;  //hashmap of object names and their MyObject data
+typedef dReal dVector3R[3];                //probably don't need this
+static double scaling[NUM];                //array to be filled with scaling info for each object
 
 
 
-// this is called by dSpaceCollide when two objects in space are
-// potentially colliding.
+/*functions are below*/
+
+/* this is called by dSpaceCollide when two objects in space are potentially colliding */
 static void nearCallback (void *, dGeomID o1, dGeomID o2)
 {
   int i;
   // if (o1->body && o2->body) return;
-
   // exit without doing anything if the two bodies are connected by a joint
   dBodyID b1 = dGeomGetBody(o1);
   dBodyID b2 = dGeomGetBody(o2);
@@ -159,7 +158,7 @@ static void nearCallback (void *, dGeomID o1, dGeomID o2)
 }
 
 
-// start simulation - set viewpoint
+/* start simulation - set viewpoint */
 static void start()
 {
   //static float xyz[3] = {2.1640f,-1.3079f,1.7600f};
@@ -169,7 +168,7 @@ static void start()
   dsSetViewpoint (xyz,hpr);
 }
 
-
+/* after a certaint number of simulation steps, checks if an object from a the scene is valid or not */
 static bool inStaticEquilibrium(MyObject &object){
     double startX = object.center[0];
     double startY = object.center[1];
@@ -200,7 +199,7 @@ static bool inStaticEquilibrium(MyObject &object){
  
 
 
-
+/* after a certaint number of simulation steps, checks if a scene is valid or not */
 static bool isValid(std::vector<string> modelnames){
     bool stable = true;
     for (int i=0; i<num; i++){ 
@@ -212,31 +211,28 @@ static bool isValid(std::vector<string> modelnames){
        } 
     } 
     if (stable == true){
-      if(PRINT_CHECKER_RESULT){
+      if(PRINT_CHKR_RSLT){
         cout << "TRUE"<<endl;
       }
       return true;
     } else{
-      if(PRINT_CHECKER_RESULT){
+      if(PRINT_CHKR_RSLT){
         cout << "FALSE"<<endl;
-      }
-      
+      }     
       return false;
     }
 }
 
 
 
-
-//To Do
+/* sets all the objects' data */
 void setObject (MyObject &object, int number, char* filename){
-  int SCALE =100;
+  
+  int SCALE =number; //set the scale, or else object will be too big or too small
   
   //Load the file
   objLoader *objData = new objLoader();
 	objData->load(filename);
-
-  object.IDnumber = number;
   object.indCount = objData->faceCount;
   object.vertCount = objData->vertexCount;
 
@@ -277,7 +273,7 @@ void setObject (MyObject &object, int number, char* filename){
 } 
 
   
-
+/* construct the object and put it into the world */
 void makeObject (MyObject &object){
     int i,j,k;
     dMass m;
@@ -295,11 +291,10 @@ void makeObject (MyObject &object){
   dGeomGetAABB (object.geom[0], aabb);
   dReal maxZ = aabb[5];  //<- maxZ would be the highest Z position in the AABB
 
-
+  //build Trimesh body and unite geom with body
   object.body = dBodyCreate (world); 
   dBodySetData (object.body,(void*)(size_t)i);
-  //set body loop
-  for (k=0; k < GPB; k++){
+  for (k=0; k < GPB; k++){  //set body loop
       if (object.geom[k]){
           dGeomSetBody(object.geom[k],object.body);
       }
@@ -312,7 +307,7 @@ void makeObject (MyObject &object){
 
 
 
-
+/* set the objects' 6DoF poses */
 void translateObject(MyObject &object, const dReal* center, const dMatrix3 R ){
       object.center[0] = center[0];
       object.center[1] = center[1];
@@ -325,11 +320,10 @@ void translateObject(MyObject &object, const dReal* center, const dMatrix3 R ){
 
 
 
-// set previous transformation matrix for trimesh
+/* set previous transformation matrix for trimesh */
 void setCurrentTransform(dGeomID geom){
    const dReal* Pos = dGeomGetPosition(geom);
    const dReal* Rot = dGeomGetRotation(geom);
-
    const dReal Transform[16] = 
    {
      Rot[0], Rot[4], Rot[8],  0,
@@ -343,7 +337,7 @@ void setCurrentTransform(dGeomID geom){
 
 
 
-// simulation loop
+/* simulation loop */
 static void simLoop (int pause)
 {
   //if DRAW = true, this is used to terminate the simloop from dsSimulationLoop()
@@ -375,7 +369,7 @@ static void simLoop (int pause)
   // remove all contact joints
   dJointGroupEmpty (contactgroup);
 
- 
+  //set the color and the texture for the objects when drawing them
   if(DRAW){
     dsSetColor (1,1,0);
     dsSetTexture (DS_WOOD);
@@ -408,7 +402,7 @@ static void simLoop (int pause)
          
 
       // tell the tri-tri collider the current transform of the trimesh --
-          // this is fairly important for good results.     
+      // this is fairly important for good results.     
 		  // Fill in the (4x4) matrix.
 		  dReal* p_matrix = obj[i].matrix_dblbuff + ( obj[i].last_matrix_index * 16 );
 
@@ -432,7 +426,7 @@ static void simLoop (int pause)
 
 
 
-
+/* sim loop needed when drawing a scene*/
 void drawstuffsimLoop(){
   int argc=NULL;
   char **argv=NULL;
@@ -446,10 +440,12 @@ void drawstuffsimLoop(){
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
 }
 
+/* SceneValidator.h functions are below */
 
+/* sets all the models' data */
 void SceneValidator::setModels(std::vector<string> modelnames, std::vector<string> filenames){
-
-    //set the data in an obj array
+  
+   //set the data in an obj array
    if( modelnames.size() != filenames.size()){
           std::cout<<"***ERROR*** in setModels(std::vector<string> modelnames, std::vector<string> filenames). The problem is that modelnames is not the same size as filenames"<<endl;
    } else{
@@ -457,7 +453,7 @@ void SceneValidator::setModels(std::vector<string> modelnames, std::vector<strin
       for (int i =0; i < num; i++){
           char *charfilenames = new char[filenames[i].length() + 1];
           std::strcpy(charfilenames, filenames[i].c_str());
-          setObject(obj[i], i, charfilenames );
+          setObject(obj[i], scaling[i], charfilenames );             
           makeObject(obj[i]);
       }
    }
@@ -469,6 +465,7 @@ void SceneValidator::setModels(std::vector<string> modelnames, std::vector<strin
 
 
 
+/*checks if scene is stable after certain number of steps */
 static bool isStableStill(std::vector<string> modelnames, int step){ 
     if (DRAW){
       counter=0;
@@ -484,9 +481,7 @@ static bool isStableStill(std::vector<string> modelnames, int step){
 
 
 
-
-
-
+/* allows user to set certain parameters */
 bool  SceneValidator::setParams(std::string param_name, double param_value){   
       if( param_name.compare("STEP1") == 0 ){     
         STEP1 = param_value;
@@ -554,8 +549,8 @@ bool  SceneValidator::setParams(std::string param_name, double param_value){
       } else if( param_name.compare("PRINT_DELTA_POS") == 0 ){    
         PRINT_DELTA_POS = param_value;
         return true;
-      } else if( param_name.compare("PRINT_CHECKER_RESULT") == 0 ){    
-        PRINT_CHECKER_RESULT = param_value;
+      } else if( param_name.compare("PRINT_CHKR_RSLT") == 0 ){    
+        PRINT_CHKR_RSLT = param_value;
         return true;
       } else {
         cout<<"Invalid parameter name: "<<param_name;
@@ -563,8 +558,14 @@ bool  SceneValidator::setParams(std::string param_name, double param_value){
       }     
 }
 
+/* allows user to set the scale of a specific object */
+bool  SceneValidator::setScale(int thisObject, double scaleFactor){
+      scaling[thisObject] = scaleFactor;
+}
 
 
+
+/* checks if a given scene is in static equilibrium or not */
 bool SceneValidator::isValidScene(std::vector<string> modelnames, std::vector<Eigen::Affine3d> model_poses){
     //set all the Objects's positions
     num = modelnames.size();
@@ -598,7 +599,7 @@ bool SceneValidator::isValidScene(std::vector<string> modelnames, std::vector<Ei
     }
 }
 
-// constuctor  TO DO: add the rest of the parameters? add man many other constructors??
+/* custom constructor to construct a SceneValidator object */   
 SceneValidator::SceneValidator(double GRAVITYx, double GRAVITYy, double GRAVITYz, double PLANEa, double PLANEb, double PLANEc, double PLANEd){
   // create threading world
   dInitODE2(0);
@@ -613,10 +614,13 @@ SceneValidator::SceneValidator(double GRAVITYx, double GRAVITYy, double GRAVITYz
   pool = dThreadingAllocateThreadPool(4, 0, dAllocateFlagBasicData, NULL);
   dThreadingThreadPoolServeMultiThreadedImplementation(pool, threading);
   dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
+  for (int i =0; i < NUM; i++){
+        scaling[i] = DEFAULT_SCALE;
+  }
 }
 
 
-//default constuctor
+/* default constructor to construct a SceneValidator object */
 SceneValidator::SceneValidator(){
   // create threading world
   dInitODE2(0);
@@ -631,9 +635,12 @@ SceneValidator::SceneValidator(){
   pool = dThreadingAllocateThreadPool(4, 0, dAllocateFlagBasicData, NULL);
   dThreadingThreadPoolServeMultiThreadedImplementation(pool, threading);
   dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
+  for (int i =0; i < NUM; i++){
+        scaling[i] = DEFAULT_SCALE;
+  }
 }
 
-//destructor
+/* default destructor to destruct a SceneValidator object */
 SceneValidator::~SceneValidator(){ 
   // destroy threading and world
   dThreadingImplementationShutdownProcessing(threading);
@@ -644,4 +651,76 @@ SceneValidator::~SceneValidator(){
   dSpaceDestroy (space);
   dWorldDestroy (world);
   dCloseODE();
+}
+
+int main (int argc, char **argv)
+{
+  
+
+ // Here's all the input***********************************************************************************************************
+  vector<string> filenames = {"/home/joeshepley/3DModels/obj_files/fromPLY/milk_carton.obj",
+                            "/home/joeshepley/3DModels/obj_files/fromPLY/vf_paper_bowl.obj",
+                             "/home/joeshepley/3DModels/obj_files/fromPLY/red_mug.obj"};
+
+                             
+  
+  vector<string> modelnames = {"milk_carton", "paper_bowl", "red_mug"};
+  
+  //make affine3d's
+  Eigen::Quaterniond q;  
+  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
+  q.normalize();
+  Eigen::Affine3d aq = Eigen::Affine3d(q);
+  Eigen::Affine3d t(Eigen::Translation3d(Eigen::Vector3d(-4,0,1)));
+  Eigen::Affine3d a = (t*aq); 
+    
+  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
+  q.normalize();
+  aq = Eigen::Affine3d(q);
+  t = (Eigen::Translation3d(Eigen::Vector3d(0,0,1.1)));
+  Eigen::Affine3d b = (t*aq); 
+    
+  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
+  q.normalize();
+  aq = Eigen::Affine3d(q);
+  t =  (Eigen::Translation3d(Eigen::Vector3d(4,0,0.66)));
+  Eigen::Affine3d c = (t*aq); 
+
+  vector<Eigen::Affine3d> model_poses = {a,b,c};  //unbalanced teacup on mug
+
+  q = Eigen::Quaterniond(0.3, 0.7, 0, 0);
+  q.normalize();
+  aq = Eigen::Affine3d(q);
+  t =  (Eigen::Translation3d(Eigen::Vector3d(-2,0, 1.59)));
+  Eigen::Affine3d a2 = (t*aq); 
+  
+  vector<Eigen::Affine3d> model_poses2 = {a2,b,c};  //teacup falling from the sky
+// Here's all the input^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+
+
+
+
+
+
+
+  
+  // construct object and set parameters
+  SceneValidator scene;                         //construct the object
+  scene.setParams("DRAW", true);                //visualize what's actually happening 
+  scene.setParams("PRINT_CHKR_RSLT", true);     //print out the result of each check
+  scene.setParams("STEP1", 1000);               //make the first check take 1000 steps
+  scene.setScale(1, 200);                       //set modelnames[1] to be scaled down by factor of 200   
+
+  // API functions
+  scene.setModels(modelnames, filenames);       //set all the models and get their data  
+  scene.isValidScene(modelnames, model_poses);  //check scene 1
+  scene.isValidScene(modelnames, model_poses2); //check scene 2
+
+  
+ 
+
+
+  return 0;
 }
