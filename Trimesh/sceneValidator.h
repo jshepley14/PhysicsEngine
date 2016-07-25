@@ -6,30 +6,25 @@
 #ifndef SCENEVALIDATOR_H
 #define SCENEVALIDATOR_H
 
-/* Do I need these?
-#ifndef sceneValidator.h
-#define sceneValidator.h
-*/
+
 
 class SceneValidator{
     private:
      dThreadingThreadPoolID pool;
      dThreadingImplementationID threading;
      
-
     public:
 	SceneValidator(double GRAVITYx, double GRAVITYy, double GRAVITYz, double PLANEa, double PLANEb, double PLANEc, double PLANEd);  //custom constructor
         SceneValidator();   //default constructor
         ~SceneValidator();  //destructor
 
-        /*  Allows the user to set certain parameters such as the THRESHOLD, Gravity,
-        /   number of checks, number of checks per step, DRAW, printing out certain things etc?
-        */
+        /*  Allows the user to set certain parameters */
         bool setParams(std::string param_name, double param_value);
 
-         
+        /* Allows user to set scale of specific object */
+        bool setScale(int thisObject, double scaleFactor);
 
-        /*Provides model names and path to all models that will be tested by isStable.
+        /*Provides model names and path to all models that will be tested by isValidScene.
         / Input a list of model names and a list of corresponding file locations. 
         / Files should be in .obj format.  setModels is called once.
         */ 
