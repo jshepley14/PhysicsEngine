@@ -108,6 +108,14 @@ struct MyObject {
   vector<float> centerOfMass; 
 };
 
+class data // This if for center of mass calculations
+{
+public:
+    float x1,y1,z1;
+    float x2,y2,z2;
+    float x3,y3,z3;
+};
+
 //more variables, not really parameters though  
 static int num=0;	                         //number of objects in simulation
 static int nextobj=0;		                   //next object to recycle if num==NUM
@@ -161,8 +169,8 @@ static void nearCallback (void *, dGeomID o1, dGeomID o2)
 /* start simulation - set viewpoint */
 static void start()
 {
-  //static float xyz[3] = {2.1640f,-1.3079f,1.7600f};
-  //static float hpr[3] = {125.5000f,-17.0000f,0.0000f};
+  //static float xyz[3] = {0.5f,-2.f,.50f};
+  //static float hpr[3] = {90.000f, 0.0000f, 0.0000f};
   static float xyz[3]={-0.0559,-8.2456,6.0500};
   static float hpr[3]= { 89.0000,-25.0000,0.0000};
   dsSetViewpoint (xyz,hpr);
@@ -236,6 +244,47 @@ void setObject (MyObject &object, int number, char* filename){
   object.indCount = objData->faceCount;
   object.vertCount = objData->vertexCount;
 
+  //get the center of mass
+  int numTriangles = objData->faceCount; 
+	data triangles[numTriangles];
+	// fill the triangles array with the data in the obj file
+	for (int i =0; i < numTriangles; i ++){
+		obj_face *o = objData->faceList[i];
+		//cout<<o->vertex_index[0]<<"," <<o->vertex_index[1]<<","<< o->vertex_index[2] <<endl;
+		triangles[i].x1=objData->vertexList[ o->vertex_index[0] ]->e[0] ;  //(int)(objData->vertexList[ o->vertex_index[0] ]->e[0]/ROUNDSCALE) * ROUNDSCALE ; used for scaling
+		triangles[i].y1=objData->vertexList[ o->vertex_index[0] ]->e[1] ;
+		triangles[i].z1=objData->vertexList[ o->vertex_index[0] ]->e[2] ;
+		triangles[i].x2=objData->vertexList[ o->vertex_index[1] ]->e[0] ;
+		triangles[i].y2=objData->vertexList[ o->vertex_index[1] ]->e[1] ;
+		triangles[i].z2=objData->vertexList[ o->vertex_index[1] ]->e[2] ;
+		triangles[i].x3=objData->vertexList[ o->vertex_index[2] ]->e[0] ;
+		triangles[i].y3=objData->vertexList[ o->vertex_index[2] ]->e[1] ;
+		triangles[i].z3=objData->vertexList[ o->vertex_index[2] ]->e[2] ;
+	}
+    
+  double totalVolume = 0, currentVolume;
+  double xCenter = 0, yCenter = 0, zCenter = 0;
+
+  for (int i = 0; i < numTriangles; i++)
+  {
+      totalVolume += currentVolume = (triangles[i].x1*triangles[i].y2*triangles[i].z3 - triangles[i].x1*triangles[i].y3*triangles[i].z2 - triangles[i].x2*triangles[i].y1*triangles[i].z3 + triangles[i].x2*triangles[i].y3*triangles[i].z1 + triangles[i].x3*triangles[i].y1*triangles[i].z2 - triangles[i].x3*triangles[i].y2*triangles[i].z1) / 6;
+      xCenter += ((triangles[i].x1 + triangles[i].x2 + triangles[i].x3) / 4) * currentVolume;
+      yCenter += ((triangles[i].y1 + triangles[i].y2 + triangles[i].y3) / 4) * currentVolume;
+      zCenter += ((triangles[i].z1 + triangles[i].z2 + triangles[i].z3) / 4) * currentVolume;
+  }
+
+  
+
+  //float COMX = (xCenter/totalVolume)/SCALE;
+  //float COMY = (yCenter/totalVolume)/SCALE;
+  //float COMZ = (zCenter/totalVolume)/SCALE;
+  double COMX = (xCenter/totalVolume)/SCALE;
+  double COMY = (yCenter/totalVolume)/SCALE;
+  double COMZ = (zCenter/totalVolume)/SCALE;
+  //double COMZ = -1.3368;
+  printf("My COM:    %.4f, %.4f, %.4f\n", COMX, COMY, COMZ);
+  object.centerOfMass = {COMX,COMY,COMZ};
+
 
   //Make 2D vector of indices for drawing 
   int indexCount = object.indCount; 
@@ -258,16 +307,16 @@ void setObject (MyObject &object, int number, char* filename){
   //Make 1D vector of vertices for drawing
   int vertCount =  object.vertCount;
 	for(int i=0; i< vertCount ; i++){
-		object.vertexDrawVec.push_back( objData->vertexList[i]->e[0]/SCALE );
-		object.vertexDrawVec.push_back( objData->vertexList[i]->e[1]/SCALE );
-		object.vertexDrawVec.push_back( objData->vertexList[i]->e[2]/SCALE );	
+		object.vertexDrawVec.push_back( objData->vertexList[i]->e[0]/SCALE - object.centerOfMass[0]);
+		object.vertexDrawVec.push_back( objData->vertexList[i]->e[1]/SCALE - object.centerOfMass[1]);
+		object.vertexDrawVec.push_back( objData->vertexList[i]->e[2]/SCALE - object.centerOfMass[2]);	
 	}
   
   //Make 1D vector of vertices for geometry
   for(int i=0; i< vertCount ; i++){
-		object.vertexGeomVec.push_back( objData->vertexList[i]->e[0]/SCALE );
-		object.vertexGeomVec.push_back( objData->vertexList[i]->e[1]/SCALE );
-		object.vertexGeomVec.push_back( objData->vertexList[i]->e[2]/SCALE );	
+		object.vertexGeomVec.push_back( objData->vertexList[i]->e[0]/SCALE - object.centerOfMass[0]);
+		object.vertexGeomVec.push_back( objData->vertexList[i]->e[1]/SCALE - object.centerOfMass[1]);
+		object.vertexGeomVec.push_back( objData->vertexList[i]->e[2]/SCALE - object.centerOfMass[2]);	
 	}
 
 } 
@@ -275,8 +324,11 @@ void setObject (MyObject &object, int number, char* filename){
   
 /* construct the object and put it into the world */
 void makeObject (MyObject &object){
-    int i,j,k;
-    dMass m;
+  int i,j,k;
+  dMass m;
+
+  object.body = dBodyCreate (world); 
+  dBodySetData (object.body,(void*)(size_t)i);
 
   //build Trimesh geom
   dTriMeshDataID new_tmdata = dGeomTriMeshDataCreate();
@@ -285,23 +337,27 @@ void makeObject (MyObject &object){
   object.geom[0] = dCreateTriMesh(space, new_tmdata, 0, 0, 0);
   dGeomSetData(object.geom[0], new_tmdata);        
   dMassSetTrimesh( &m, DENSITY, object.geom[0] );
-
-  //gets the absolute bounding box, this code isn't current used
+  //gets the absolute bounding box, this code isn't currently used
   dReal aabb[6];
   dGeomGetAABB (object.geom[0], aabb);
   dReal maxZ = aabb[5];  //<- maxZ would be the highest Z position in the AABB
-
+  printf("Object's mass: %.4f\n", m.mass);
+  printf("Object's height: %.4f\n", maxZ);
+  printf("ODE's COM: %.4f, %.4f, %.4f\n", m.c[0], m.c[1], m.c[2]);
+  dGeomSetPosition(object.geom[0], m.c[0], m.c[1], m.c[2]);
+  dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]);
+  printf("ODE's Translate COM: %.4f, %.4f, %.4f\n", m.c[0], m.c[1], m.c[2]);
+  cout<<m.mass;
   //build Trimesh body and unite geom with body
-  object.body = dBodyCreate (world); 
-  dBodySetData (object.body,(void*)(size_t)i);
+  //object.body = dBodyCreate (world); 
+  //dBodySetData (object.body,(void*)(size_t)i);
   for (k=0; k < GPB; k++){  //set body loop
       if (object.geom[k]){
           dGeomSetBody(object.geom[k],object.body);
       }
-  } 
-  dGeomSetOffsetPosition(object.geom[0], -m.c[0],-m.c[1], -m.c[2]);
-  dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]); 
+  }  
   dBodySetMass(object.body,&m);
+  
 
 }
 
@@ -658,7 +714,13 @@ int main (int argc, char **argv)
   
 
  // Here's all the input***********************************************************************************************************
-  vector<string> filenames = {"/home/joeshepley/3DModels/obj_files/fromPLY/milk_carton.obj",
+  
+                                      //doesn't load this flipped version of the file
+  vector<string> filenames = {"/home/joeshepley/3DModels/obj_files/fromPLY/701.330.68.dec.obj",
+                              //"/home/joeshepley/3DModels/obj_files/fromPLY/300.151.23.obj",
+                              //"/home/joeshepley/3DModels/obj_files/errors/flippedError/300.151.23_flipped_translated.obj",
+                              //"/home/joeshepley/3DModels/obj_files/fromPLY/301.290.30.obj",
+                              //"/home/joeshepley/3DModels/obj_files/fromPLY/veryThin/200.580.66.obj",
                             "/home/joeshepley/3DModels/obj_files/fromPLY/vf_paper_bowl.obj",
                              "/home/joeshepley/3DModels/obj_files/fromPLY/red_mug.obj"};
 
