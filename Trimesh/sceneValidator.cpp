@@ -6,8 +6,11 @@
 //Description:  This code provides functions which can be used to check if an set of objects are in static
 //              equilibrium or not.  The method to do this relies on in Open Dynamics Engine, a physics engine.
 //    Gitthub:  https://github.com/jshepley14/PhysicsEngine 
-//
-/****************************************************/
+//   Glossary:
+//              "ODE": Open Dynamics Engine http://www.ode.org/
+//              "draw":  render a scene using the drawstuff graphics library and actually see how the objects are behaving
+//              "ODE trimesh demo": refers to demo_moving_trimesh.cpp a demo program in ODE's demo folder
+/****************************************************/  
 
 
 /* headers */
@@ -43,26 +46,42 @@
 #endif
 
 // some constants
-#define NUM 200			    // max number of objects
-#define DENSITY (5.0)		// density of all objects
+#define NUM 200			    // max number of objects (FYI 14 objects make program 10x slower than 2 objects and Number of Objects vs Time is linear)
 #define GPB 3		      	// maximum number of geometries per body
-#define MAX_CONTACTS 64	// maximum number of contact points per body
 using namespace std;
 
 
 /* variables */
 
+//   Variables that will affect computation time:
+//DRAW (rendering an image significantly slows down computation time)
+//MAX_CONTACTS       
+//STEP1, STEP2, STEP3, and STEP4                 
+//THRESHHOLD  
+//TIMESTEP    
+
+//   Variables that affect THRESHOLD
+//BOUNCE
+//BOUNCE_vel
+//DENSITY
+//FRICTION_mu
+//GRAVITYz
+//SOFT_CFM
+
+
 //Variables that can be set in setParams()
 static double BOUNCE = 0.0;            //change the bounciness
 static double BOUNCE_vel = 0.0;        //change the bounciness speed
 static int    DEFAULT_SCALE = 100;     //The default value each .obj files data is scaled down by
+static double DENSITY = 5.0;           //The default is from ODE trimesh demo
 static bool   DRAW = false;            //used to switch on or off the drawing of the scene
-static double FRICTION_mu =  1.0;      //if you set this to 0 it will be very slippery
+static double FRICTION_mu =  1.0;      //if you set this to 0 objects will be very slippery
 static double FRICTION_mu2 =  0.0;     //changing this doesn't seem to do much
-static double GRAVITYx = 0;
-static double GRAVITYy = 0;
-static double GRAVITYz = -0.5;         // yes, this is not -9.8, but this was what the default trimesh demo had 
-static double PLANEa = 0;              // Equation of a plane: a*x+b*y+c*z = d The normal vector must have length 1
+static int    MAX_CONTACTS = 64;       //maximum number of contact points per body
+static double GRAVITYx = 0;            //gravitational force coming from x direction
+static double GRAVITYy = 0;            //gravitational force coming from y direction
+static double GRAVITYz = -0.5;         //yes, this is not -9.8, but this was the default that ODE trimesh demo had. Using -9.8 in this program prevents accuracy unless you change other variables like TIMESTEP   
+static double PLANEa = 0;              //Equation of a plane: a*x+b*y+c*z = d The normal vector must have length 1
 static double PLANEb = 0;
 static double PLANEc = 1;           
 static double PLANEd = 0; 
@@ -78,19 +97,19 @@ static int    STEP4=110;               //amount of simulation steps used in chec
 static double THRESHHOLD = 0.08;       //amount objects allowed to move while still being marked as in static equilibrium
 static double TIMESTEP = 0.05;         //controls how far each step is taken
 
-//variables that can be set in setScale();
-static bool SET_CUSTOM_SCALE = false;  //allows user to scale the object 
-static int ObjectToScale;           //scale's the 0th object in the array of objects
-static double scale;                 //default scale factor
+
 
 //variables used when DRAW = true
-static int counter=0;   //used within simulation to count until dsSTEP, indicates termination of drawing window      
-static int dsSTEP=100;    //default simulation step number when drawing a scene
-static int HEIGHT=500;   //window height
-static int WIDTH=1000;  //window width
+float  xyz[3]={ -0.0559,  -8.2456, 6.0500};  //this sets the x,y,z of the camera position when you view a drawing
+float  hpr[3]={ 89.0000, -25.0000, 0.0000};  //this sets the heading, pitch and roll numbers in degrees(camera angle) of the camera when you view a drawing
+static int    counter=0;    //used within simulation to count until dsSTEP, indicates termination of drawing window      
+static int    dsSTEP=100;   //default simulation step number when drawing a scene. To change dsSTEP, just change STEP1,2,3 or 4.
+static int    HEIGHT=500;   //window height
+static int    WIDTH=1000;   //window width
+
  
 
-/* dynamics and collision objects */
+/* dynamics and collision object (this is the model's data) */
 
 struct MyObject {
   dBodyID body;			 // the body
@@ -108,7 +127,8 @@ struct MyObject {
   vector<float> centerOfMass; 
 };
 
-class data // This if for center of mass calculations
+// class data   is for center of mass calculations
+class data 
 {
 public:
     float x1,y1,z1;
@@ -165,16 +185,22 @@ static void nearCallback (void *, dGeomID o1, dGeomID o2)
   }
 }
 
-
-/* start simulation - set viewpoint */
-static void start()
-{
-  //static float xyz[3] = {0.5f,-2.f,.50f};
-  //static float hpr[3] = {90.000f, 0.0000f, 0.0000f};
-  static float xyz[3]={-0.0559,-8.2456,6.0500};
-  static float hpr[3]= { 89.0000,-25.0000,0.0000};
-  dsSetViewpoint (xyz,hpr);
+/* user can set viewpoint (camera angle) */
+bool SceneValidator::setCamera(float x, float y, float z, float h, float p, float r){  
+     xyz[0]=x;
+     xyz[1]=y;
+     xyz[2]=z;
+     hpr[0]=h;
+     hpr[1]=p;
+     hpr[2]=r;  
 }
+
+
+/* start simulation when drawing (sets the viewpoint) */
+static void start(){  
+  dsSetViewpoint (xyz,hpr); 
+}
+
 
 /* after a certaint number of simulation steps, checks if an object from a the scene is valid or not */
 static bool inStaticEquilibrium(MyObject &object){
@@ -236,22 +262,20 @@ static bool isValid(std::vector<string> modelnames){
 /* sets all the objects' data */
 void setObject (MyObject &object, int number, char* filename){
   
-  int SCALE =number; //set the scale, or else object will be too big or too small
+  int SCALE = number; //set the scale, or else object will be too big or too small, can set the scale manually if you want in setScale()
   
   //Load the file
-  objLoader *objData = new objLoader();
+  objLoader *objData = new objLoader();     //this code relies on objLoader.h and it's dependencies
 	objData->load(filename);
-  object.indCount = objData->faceCount;
-  object.vertCount = objData->vertexCount;
+  object.indCount = objData->faceCount;     //gets number of faces in that make up the trimesh
+  object.vertCount = objData->vertexCount;  //gets the number of vertices that make up the trimesh
 
-  //get the center of mass
+  //get the center of mass.  The procedure to do this was inspired by http://stackoverflow.com/questions/2083771/a-method-to-calculate-the-centre-of-mass-from-a-stl-stereo-lithography-file 
   int numTriangles = objData->faceCount; 
 	data triangles[numTriangles];
-	// fill the triangles array with the data in the obj file
-	for (int i =0; i < numTriangles; i ++){
-		obj_face *o = objData->faceList[i];
-		//cout<<o->vertex_index[0]<<"," <<o->vertex_index[1]<<","<< o->vertex_index[2] <<endl;
-		triangles[i].x1=objData->vertexList[ o->vertex_index[0] ]->e[0] ;  //(int)(objData->vertexList[ o->vertex_index[0] ]->e[0]/ROUNDSCALE) * ROUNDSCALE ; used for scaling
+	for (int i =0; i < numTriangles; i ++){  // fill the triangles array with the data in the obj file
+		obj_face *o = objData->faceList[i];	
+		triangles[i].x1=objData->vertexList[ o->vertex_index[0] ]->e[0] ;  
 		triangles[i].y1=objData->vertexList[ o->vertex_index[0] ]->e[1] ;
 		triangles[i].z1=objData->vertexList[ o->vertex_index[0] ]->e[2] ;
 		triangles[i].x2=objData->vertexList[ o->vertex_index[1] ]->e[0] ;
@@ -260,11 +284,9 @@ void setObject (MyObject &object, int number, char* filename){
 		triangles[i].x3=objData->vertexList[ o->vertex_index[2] ]->e[0] ;
 		triangles[i].y3=objData->vertexList[ o->vertex_index[2] ]->e[1] ;
 		triangles[i].z3=objData->vertexList[ o->vertex_index[2] ]->e[2] ;
-	}
-    
+	}   
   double totalVolume = 0, currentVolume;
   double xCenter = 0, yCenter = 0, zCenter = 0;
-
   for (int i = 0; i < numTriangles; i++)
   {
       totalVolume += currentVolume = (triangles[i].x1*triangles[i].y2*triangles[i].z3 - triangles[i].x1*triangles[i].y3*triangles[i].z2 - triangles[i].x2*triangles[i].y1*triangles[i].z3 + triangles[i].x2*triangles[i].y3*triangles[i].z1 + triangles[i].x3*triangles[i].y1*triangles[i].z2 - triangles[i].x3*triangles[i].y2*triangles[i].z1) / 6;
@@ -272,19 +294,17 @@ void setObject (MyObject &object, int number, char* filename){
       yCenter += ((triangles[i].y1 + triangles[i].y2 + triangles[i].y3) / 4) * currentVolume;
       zCenter += ((triangles[i].z1 + triangles[i].z2 + triangles[i].z3) / 4) * currentVolume;
   }
-
-  
-
-  //float COMX = (xCenter/totalVolume)/SCALE;
-  //float COMY = (yCenter/totalVolume)/SCALE;
-  //float COMZ = (zCenter/totalVolume)/SCALE;
   double COMX = (xCenter/totalVolume)/SCALE;
   double COMY = (yCenter/totalVolume)/SCALE;
   double COMZ = (zCenter/totalVolume)/SCALE;
-  //double COMZ = -1.3368;
   printf("My COM:    %.4f, %.4f, %.4f\n", COMX, COMY, COMZ);
-  object.centerOfMass = {COMX,COMY,COMZ};
+  object.centerOfMass = {COMX,COMY,COMZ};  //finished getting the center of mass
+  
 
+  //Now get all the data from the .obj file (faces and vertices) 
+  //and put it in vectors so ODE can make a trimesh out of that data.
+  //vectors "for drawing" have the same data as vectors "for geometry", 
+  //but it's more manageable to have seperate vectors when DRAW = true and when DRAW = false   
 
   //Make 2D vector of indices for drawing 
   int indexCount = object.indCount; 
@@ -304,6 +324,7 @@ void setObject (MyObject &object, int number, char* filename){
     object.indexGeomVec.push_back((objData->faceList[i])->vertex_index[2]);   
   }
 
+  //The object's center of mass must be at 0,0,0 relative to the rest of the object, that's why we scale and then shift by the calculated centerOfMass
   //Make 1D vector of vertices for drawing
   int vertCount =  object.vertCount;
 	for(int i=0; i< vertCount ; i++){
@@ -325,9 +346,9 @@ void setObject (MyObject &object, int number, char* filename){
 /* construct the object and put it into the world */
 void makeObject (MyObject &object){
   int i,j,k;
-  dMass m;
+  dMass m;  //this is ODE's special "mass" object. It contains inertia info, actual weight and center of mass. Look at mass.h and mass.cpp for more info in ODE library
 
-  object.body = dBodyCreate (world); 
+  object.body = dBodyCreate (world);  //you must create a "body" AND a "geom" (geometry) to represent an model in ODE
   dBodySetData (object.body,(void*)(size_t)i);
 
   //build Trimesh geom
@@ -345,12 +366,10 @@ void makeObject (MyObject &object){
   printf("Object's height: %.4f\n", maxZ);
   printf("ODE's COM: %.4f, %.4f, %.4f\n", m.c[0], m.c[1], m.c[2]);
   dGeomSetPosition(object.geom[0], m.c[0], m.c[1], m.c[2]);
-  dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]);
+  dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]);  //object's center of mass must be at 0,0,0 relative to the rest of the object
   printf("ODE's Translate COM: %.4f, %.4f, %.4f\n", m.c[0], m.c[1], m.c[2]);
   cout<<m.mass;
   //build Trimesh body and unite geom with body
-  //object.body = dBodyCreate (world); 
-  //dBodySetData (object.body,(void*)(size_t)i);
   for (k=0; k < GPB; k++){  //set body loop
       if (object.geom[k]){
           dGeomSetBody(object.geom[k],object.body);
@@ -406,6 +425,7 @@ static void simLoop (int pause)
   //define the space and collide function
   dSpaceCollide (space,0,&nearCallback);
 
+//not quite sure what this code block or what setCurrentTransform() does, but it was from ODE trimesh demo
 #if 1
   if (!pause) 
   {
@@ -417,8 +437,9 @@ static void simLoop (int pause)
   }
 #endif
 
-  if (!pause) dWorldQuickStep (world,TIMESTEP); //originally 0.05
+  if (!pause) dWorldQuickStep (world,TIMESTEP); //<- this is a big factor in accuracy and how long simulation takes
 
+  //not 100% what dSpaceGetNumGeoms() does... was in ODE trimesh demo 
   for (int j = 0; j < dSpaceGetNumGeoms(space); j++){
 	  dSpaceGetGeom(space, j);
   }
@@ -431,14 +452,15 @@ static void simLoop (int pause)
     dsSetTexture (DS_WOOD);
   } 
   
-
+  //updates the position and rotation with every step through the simulation
   for (int i=0; i<num; i++) {
     for (int j=0; j < GPB; j++) {
       if (obj[i].geom[j]) {  
         if (dGeomGetClass(obj[i].geom[j]) == dTriMeshClass) {
-          const dReal* Pos = dGeomGetPosition(obj[i].geom[j]);
-          const dReal* Rot = dGeomGetRotation(obj[i].geom[j]);
-  
+          const dReal* Pos = dGeomGetPosition(obj[i].geom[j]);  //get and set the new position
+          const dReal* Rot = dGeomGetRotation(obj[i].geom[j]);  //get and set the new rotation
+
+        //this is where drawstuff library actually draws the trimesh
         if (DRAW) {
             for (int ii = 0; ii < obj[i].indCount; ii++) {
                 const dReal v[9] = { // explicit conversion from float to dReal
@@ -452,10 +474,13 @@ static void simLoop (int pause)
                   obj[i].vertexDrawVec[obj[i].indexDrawVec[ii][2] * 3 + 1],
                   obj[i].vertexDrawVec[obj[i].indexDrawVec[ii][2] * 3 + 2]
                 };
-                dsDrawTriangle(Pos, Rot, &v[0], &v[3], &v[6], 1);
+                dsDrawTriangle(Pos, Rot, &v[0], &v[3], &v[6], 1);  //a trimesh is made up of triangles so triangles are drawn
+
               }
         }
          
+      //not quite sure what the following code from here until the end of this function does but it was from ODE's trimesh demos
+      //the following comments are from the demo as well
 
       // tell the tri-tri collider the current transform of the trimesh --
       // this is fairly important for good results.     
@@ -482,7 +507,7 @@ static void simLoop (int pause)
 
 
 
-/* sim loop needed when drawing a scene*/
+/* special simulation loop needed when drawing a scene (ultimately still uses simloop() though) */
 void drawstuffsimLoop(){
   int argc=NULL;
   char **argv=NULL;
@@ -492,11 +517,11 @@ void drawstuffsimLoop(){
   fn.step = &simLoop;
   fn.command = NULL;
   fn.stop = NULL;
-  fn.path_to_textures = "/home/joeshepley/ode-0.13.1/drawstuff/textures";
+  fn.path_to_textures = "/home/joeshepley/ode-0.13.1/drawstuff/textures";  //if you want to draw you need textures and so this was my path to them.
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
 }
 
-/* SceneValidator.h functions are below */
+
 
 /* sets all the models' data */
 void SceneValidator::setModels(std::vector<string> modelnames, std::vector<string> filenames){
@@ -525,7 +550,7 @@ void SceneValidator::setModels(std::vector<string> modelnames, std::vector<strin
 static bool isStableStill(std::vector<string> modelnames, int step){ 
     if (DRAW){
       counter=0;
-      dsSTEP=step; //200;
+      dsSTEP=step; 
       drawstuffsimLoop();
     } else {
       for(int i = 0; i <= step; i++) {
@@ -608,6 +633,12 @@ bool  SceneValidator::setParams(std::string param_name, double param_value){
       } else if( param_name.compare("PRINT_CHKR_RSLT") == 0 ){    
         PRINT_CHKR_RSLT = param_value;
         return true;
+      } else if( param_name.compare("DENSITY") == 0 ){    
+        DENSITY = param_value;
+        return true;
+      } else if( param_name.compare("MAX_CONTACTS") == 0 ){    
+        MAX_CONTACTS = param_value;
+        return true;
       } else {
         cout<<"Invalid parameter name: "<<param_name;
         return false;
@@ -624,17 +655,16 @@ bool  SceneValidator::setScale(int thisObject, double scaleFactor){
 /* checks if a given scene is in static equilibrium or not */
 bool SceneValidator::isValidScene(std::vector<string> modelnames, std::vector<Eigen::Affine3d> model_poses){
     //set all the Objects's positions
-    num = modelnames.size();
+    num = modelnames.size();  
     for (int i =0; i < num; i++){
-       auto mappedObject= m.find(modelnames[i]);
-       
+       auto mappedObject= m.find(modelnames[i]);   //get model from hashmap
        Eigen::Affine3d a = model_poses[i];
-       const dMatrix3 R = { 
+       const dMatrix3 R = {                        //convert affine info to a 3x3 rotation matrix and a x,y,z position array
          a(0,0), a(0,1), a(0,2),  
          a(1,0), a(1,1), a(1,2),  
          a(2,0), a(2,1), a(2,2)    }; 
        const dReal center[3] = {a.translation()[0],a.translation()[1], a.translation()[2]};
-       translateObject(mappedObject->second, center, R);      
+       translateObject(mappedObject->second, center, R);  //get the model name's MyObject info and feed it the position and rotation    
     }
     
     //complete series of checks to see if scene is still stable or not
@@ -656,20 +686,22 @@ bool SceneValidator::isValidScene(std::vector<string> modelnames, std::vector<Ei
 }
 
 /* custom constructor to construct a SceneValidator object */   
-SceneValidator::SceneValidator(double GRAVITYx, double GRAVITYy, double GRAVITYz, double PLANEa, double PLANEb, double PLANEc, double PLANEd){
-  // create threading world
-  dInitODE2(0);
-  world = dWorldCreate();
+SceneValidator::SceneValidator(double GRAVITYx, double GRAVITYy, double GRAVITYz, double PLANEa, double PLANEb, double PLANEc, double PLANEd, double DEFAULT_SCALE){
+  //initialize ODE and the simulation enviornment
+  dInitODE2(0);  
+  world = dWorldCreate();  
   space = dSimpleSpaceCreate(0);
   contactgroup = dJointGroupCreate (0);
   dWorldSetGravity (world,GRAVITYx,GRAVITYy,GRAVITYz);
   dWorldSetCFM (world,1e-5);
   dCreatePlane (space,PLANEa,PLANEb,PLANEc,PLANEd); 
+  //initialize ODE's threading functions
   dAllocateODEDataForThread(dAllocateMaskAll);
   threading = dThreadingAllocateMultiThreadedImplementation();
   pool = dThreadingAllocateThreadPool(4, 0, dAllocateFlagBasicData, NULL);
   dThreadingThreadPoolServeMultiThreadedImplementation(pool, threading);
   dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
+  //scale the ALL objects to DEFAULT_SCALE 
   for (int i =0; i < NUM; i++){
         scaling[i] = DEFAULT_SCALE;
   }
@@ -678,19 +710,21 @@ SceneValidator::SceneValidator(double GRAVITYx, double GRAVITYy, double GRAVITYz
 
 /* default constructor to construct a SceneValidator object */
 SceneValidator::SceneValidator(){
-  // create threading world
+  //initialize ODE and the simulation enviornment
   dInitODE2(0);
   world = dWorldCreate();
   space = dSimpleSpaceCreate(0);
   contactgroup = dJointGroupCreate (0);
   dWorldSetGravity (world,GRAVITYx,GRAVITYy,GRAVITYz);
   dWorldSetCFM (world,1e-5);
-  dCreatePlane (space,PLANEa,PLANEb,PLANEc,PLANEd); 
+  dCreatePlane (space,PLANEa,PLANEb,PLANEc,PLANEd);
+  //initialize ODE's threading functions 
   dAllocateODEDataForThread(dAllocateMaskAll);
   threading = dThreadingAllocateMultiThreadedImplementation();
   pool = dThreadingAllocateThreadPool(4, 0, dAllocateFlagBasicData, NULL);
   dThreadingThreadPoolServeMultiThreadedImplementation(pool, threading);
   dWorldSetStepThreadingImplementation(world, dThreadingImplementationGetFunctions(threading), threading);
+  //scale the ALL objects to DEFAULT_SCALE
   for (int i =0; i < NUM; i++){
         scaling[i] = DEFAULT_SCALE;
   }
@@ -698,11 +732,12 @@ SceneValidator::SceneValidator(){
 
 /* default destructor to destruct a SceneValidator object */
 SceneValidator::~SceneValidator(){ 
-  // destroy threading and world
+  //shut down threading
   dThreadingImplementationShutdownProcessing(threading);
   dThreadingFreeThreadPool(pool);
   dWorldSetStepThreadingImplementation(world, NULL, NULL);
   dThreadingFreeImplementation(threading);
+  //shut down simulation enviornment
   dJointGroupDestroy (contactgroup);
   dSpaceDestroy (space);
   dWorldDestroy (world);
@@ -715,8 +750,9 @@ int main (int argc, char **argv)
 
  // Here's all the input***********************************************************************************************************
   
-                                      //doesn't load this flipped version of the file
-  vector<string> filenames = {"/home/joeshepley/3DModels/obj_files/fromPLY/701.330.68.dec.obj",
+                                     
+  vector<string> filenames = {"/home/joeshepley/3DModels/obj_files/fromSTL/dog.obj",
+                              //"/home/joeshepley/3DModels/obj_files/fromPLY/701.330.68.dec.obj",
                               //"/home/joeshepley/3DModels/obj_files/fromPLY/300.151.23.obj",
                               //"/home/joeshepley/3DModels/obj_files/errors/flippedError/300.151.23_flipped_translated.obj",
                               //"/home/joeshepley/3DModels/obj_files/fromPLY/301.290.30.obj",
@@ -769,12 +805,12 @@ int main (int argc, char **argv)
 
   
   // construct object and set parameters
-  SceneValidator scene;                         //construct the object
+  SceneValidator scene;
   scene.setParams("DRAW", true);                //visualize what's actually happening 
   scene.setParams("PRINT_CHKR_RSLT", true);     //print out the result of each check
   scene.setParams("STEP1", 1000);               //make the first check take 1000 steps
-  scene.setScale(1, 200);                       //set modelnames[1] to be scaled down by factor of 200   
-
+  scene.setScale(0, 10); 
+  
   // API functions
   scene.setModels(modelnames, filenames);       //set all the models and get their data  
   scene.isValidScene(modelnames, model_poses);  //check scene 1

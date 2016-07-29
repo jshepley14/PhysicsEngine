@@ -12,9 +12,9 @@ class SceneValidator{
     private:
      dThreadingThreadPoolID pool;
      dThreadingImplementationID threading;
-     
+        
     public:
-	SceneValidator(double GRAVITYx, double GRAVITYy, double GRAVITYz, double PLANEa, double PLANEb, double PLANEc, double PLANEd);  //custom constructor
+	SceneValidator(double GRAVITYx, double GRAVITYy, double GRAVITYz, double PLANEa, double PLANEb, double PLANEc, double PLANEd, double DEFAULT_SCALE);  //custom constructor
         SceneValidator();   //default constructor
         ~SceneValidator();  //destructor
 
@@ -23,6 +23,9 @@ class SceneValidator{
 
         /* Allows user to set scale of specific object */
         bool setScale(int thisObject, double scaleFactor);
+         
+        /* Allows user to set camera viewpoint */
+	bool setCamera(float x, float y, float z, float h, float p, float r);
 
         /*Provides model names and path to all models that will be tested by isValidScene.
         / Input a list of model names and a list of corresponding file locations. 
@@ -36,7 +39,7 @@ class SceneValidator{
         / model_poses sets the 6 DoF pose for each object.          
         */ 
         bool isValidScene(std::vector<std::string> modelnames, std::vector<Eigen::Affine3d> model_poses);
-         
+       
 };
 
 #endif
