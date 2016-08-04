@@ -27,5 +27,5 @@ not.  Taking a look at SceneValidator.h will give you a good idea.
 Because reducing computation time is the ultimate goal, I try to accomplish the 
 scene validation as fast as possible while still giving good results.  This is why Open
 Dynamics Engine was chosen as the physics library.  Drawstuff is a primitive graphics 
-library which is not used during the actual application of this program. Eigen is briefly 
-used to manipulate some of the transform matrices.
+library which can be turned off or on depending if the user wishes to view the scene unfold.
+Eigen is briefly used to manipulate some of the transform matrices.
