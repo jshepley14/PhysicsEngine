@@ -57,10 +57,10 @@ using namespace std;
   DRAW (rendering an image significantly slows down computation time)
   MAX_CONTACTS
   STEP1, STEP2, STEP3, and STEP4
-  THRESHHOLD
+  THRESHOLD 
   TIMESTEP
 
- ---  Variables that affect THRESHOLD ---
+ ---  Variables that affect THRESHOLD  ---
 	BOUNCE
   BOUNCE_vel
   DENSITY
@@ -96,7 +96,7 @@ static int    STEP1=6;                 //amount of simulation steps used in chec
 static int    STEP2=14;                //amount of simulation steps used in check #2
 static int    STEP3=20;                //amount of simulation steps used in check #3
 static int    STEP4=110;               //amount of simulation steps used in check #4
-static double THRESHHOLD = 0.08;       //amount objects allowed to move while still being marked as in static equilibrium
+static double THRESHOLD  = 0.08;       //amount objects allowed to move while still being marked as in static equilibrium
 static double TIMESTEP = 0.05;         //controls how far each step is taken
 
 
@@ -108,6 +108,9 @@ static int    counter=0;    //used within simulation to count until dsSTEP, indi
 static int    dsSTEP=100;   //default simulation step number when drawing a scene. To change dsSTEP, just change STEP1,2,3 or 4.
 static int    HEIGHT=500;   //window height
 static int    WIDTH=1000;   //window width
+
+//timer variables, requires c++11 
+static chrono::steady_clock::time_point startTime, endTime;
 
 
 
@@ -229,7 +232,7 @@ static bool inStaticEquilibrium(MyObject &object){
       cout<<"Delta: "<<deltaX<<", "<<deltaY<<", "<<deltaZ<<endl;
     }
     //compare the change in the object's position to see how far it moved
-    if ( deltaX > THRESHHOLD || deltaY > THRESHHOLD || deltaZ > THRESHHOLD){
+    if ( deltaX > THRESHOLD  || deltaY > THRESHOLD  || deltaZ > THRESHOLD ){
         return false;
     } else{
         return true;
@@ -605,8 +608,8 @@ bool  SceneValidator::setParams(std::string param_name, double param_value){
       } else if( param_name.compare("PLANEd") == 0 ){
         cout<<"Need to set PLANEd in the custom SceneValidator constructor.  See sceneValidator.h for how to do that";
         return true;
-      } else if( param_name.compare("THRESHHOLD") == 0 ){
-        THRESHHOLD = param_value;
+      } else if( param_name.compare("THRESHOLD") == 0 ){
+        THRESHOLD  = param_value;
         return true;
       } else if( param_name.compare("TIMESTEP") == 0 ){
         TIMESTEP = param_value;
@@ -764,42 +767,49 @@ int main (int argc, char **argv)
 
  // Here's all the input***********************************************************************************************************
 
+  vector<string> filenames1 = {"/home/joeshepley/3DModels/obj_files/fromPLY/vf_paper_bowl.obj"};
+  vector<string> modelnames1 = {"paper_bowl"};
 
-  vector<string> filenames = {"/home/joeshepley/3DModels/obj_files/fromSTL/dog.obj",
-                              //"/home/joeshepley/3DModels/obj_files/fromPLY/701.330.68.dec.obj",
-                              //"/home/joeshepley/3DModels/obj_files/fromPLY/300.151.23.obj",
-                              //"/home/joeshepley/3DModels/obj_files/errors/flippedError/300.151.23_flipped_translated.obj",
-                              //"/home/joeshepley/3DModels/obj_files/fromPLY/301.290.30.obj",
-                              //"/home/joeshepley/3DModels/obj_files/fromPLY/veryThin/200.580.66.obj",
-                            "/home/joeshepley/3DModels/obj_files/fromPLY/vf_paper_bowl.obj",
+
+
+
+  vector<string> filenames2 = {"/home/joeshepley/3DModels/obj_files/fromPLY/vf_paper_bowl.obj",
                              "/home/joeshepley/3DModels/obj_files/fromPLY/red_mug.obj"};
+  vector<string> modelnames2 = {"paper_bowl", "red_mug"};
 
 
 
-  vector<string> modelnames = {"milk_carton", "paper_bowl", "red_mug"};
+
+  vector<string> filenames3 = {"/home/joeshepley/3DModels/obj_files/fromPLY/vf_paper_bowl.obj",
+                              "/home/joeshepley/3DModels/obj_files/fromPLY/red_mug.obj", 
+                              "/home/joeshepley/3DModels/obj_files/fromSTL/dog.obj"};
+  vector<string> modelnames3 = {"paper_bowl", "red_mug","dog"};
+
+  //ground truth is paper_bowl 0,0,.27   red_mug 0,0,1.13   dog 0,0,2.03
 
   //make affine3d's
   Eigen::Quaterniond q;
   q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
   q.normalize();
   Eigen::Affine3d aq = Eigen::Affine3d(q);
-  Eigen::Affine3d t(Eigen::Translation3d(Eigen::Vector3d(-4,0,1)));
+  Eigen::Affine3d t(Eigen::Translation3d(Eigen::Vector3d(0,0,0))); //paper_bowl 
   Eigen::Affine3d a = (t*aq);
 
   q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
   q.normalize();
   aq = Eigen::Affine3d(q);
-  t = (Eigen::Translation3d(Eigen::Vector3d(0,0,1.1)));
+  t = (Eigen::Translation3d(Eigen::Vector3d(0,0,0)));  //mug 
   Eigen::Affine3d b = (t*aq);
 
   q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
   q.normalize();
   aq = Eigen::Affine3d(q);
-  t =  (Eigen::Translation3d(Eigen::Vector3d(4,0,0.66)));
+  t =  (Eigen::Translation3d(Eigen::Vector3d(0,0,0)));  //dog 
   Eigen::Affine3d c = (t*aq);
 
-  vector<Eigen::Affine3d> model_poses = {a,b,c};  //unbalanced teacup on mug
+  vector<Eigen::Affine3d> model_poses = {a,b,c};  
 
+///........................................not used
   q = Eigen::Quaterniond(0.3, 0.7, 0, 0);
   q.normalize();
   aq = Eigen::Affine3d(q);
@@ -816,24 +826,156 @@ int main (int argc, char **argv)
 
 
 
-
+  startTime = chrono::steady_clock::now();
 
   // construct object and set parameters
-  SceneValidator scene;
-  scene.setParams("DRAW", true);                //visualize what's actually happening
-  scene.setParams("PRINT_CHKR_RSLT", true);     //print out the result of each check
-  scene.setParams("STEP1", 1000);               //make the first check take 1000 steps
-  scene.setScale(0, 10);
-  scene.setParams("PRINT_AABB", true);
-  scene.setParams("PRINT_COM", true);
-  scene.setParams("PRINT_DELTA_POS", true);
+  SceneValidator *scene = new SceneValidator;
+  //scene->setParams("DRAW", true);                //visualize what's actually happening
+  //scene.setParams("PRINT_CHKR_RSLT", true);     //print out the result of each check
+  //scene.setParams("STEP1", 1000);               //make the first check take 1000 steps
+  //scene-> setScale(2, 10);
+  //scene-> setParams("PRINT_AABB", true);
+  //scene-> setParams("PRINT_COM", true);
+  //scene-> setParams("PRINT_DELTA_POS", true);
+  //scene-> setParams("PRINT_END_POS", true);
 
   // API functions
-  scene.setModels(modelnames, filenames);       //set all the models and get their data
-  scene.isValidScene(modelnames, model_poses);  //check scene 1
-  scene.isValidScene(modelnames, model_poses2); //check scene 2
+  scene-> setModels(modelnames1, filenames1);       //set all the models and get their data
+  //model_poses[0].translation()[2]=0.19;
+  //scene-> isValidScene(modelnames1, model_poses);
+
+  scene-> setParams("THRESHOLD", 0.01); 
+  double i = 0;
+  while(i <= 3){
+    model_poses[0].translation()[2]=i;
+    bool valid = scene-> isValidScene(modelnames1, model_poses);  
+ 	  if (valid){
+       cout<<"TRUE";
+       cout<<model_poses[0].translation()[2];
+       break;
+     }  
+     i=i+0.01;
+  }
+  delete scene;
+  
+ 
 
 
+
+  SceneValidator *scene2 = new SceneValidator;
+  //scene2->setParams("DRAW", true);
+  scene2->setModels(modelnames2, filenames2);
+  scene2->setParams("THRESHOLD", 0.04); 
+  //i = model_poses[0].translation()[2]*2;
+  i=1.0;
+  while(i <= 3){
+    model_poses[1].translation()[2]=i;
+    bool valid = scene2->isValidScene(modelnames2, model_poses);  
+ 	  if (valid){
+       cout<<"TRUE";
+       cout<<model_poses[1].translation()[2];
+       break;
+     }  
+     i=i+0.01;
+  }
+  delete scene2;
+
+
+  SceneValidator *scene3  = new SceneValidator;
+  //scene3 ->setParams("DRAW", true);
+  scene3->setScale(2,10);
+  scene3 ->setModels(modelnames3, filenames3);
+  scene3 ->setParams("THRESHOLD", 0.05);
+  //i=model_poses[1].translation()[2]; 
+  i=1.8;
+  while(i <= 3){
+    model_poses[2].translation()[2]=i;
+    bool valid = scene3 ->isValidScene(modelnames3, model_poses);  
+ 	  if (valid){
+       
+       endTime = chrono::steady_clock::now();
+       auto diff = endTime - startTime;
+       cout <<"Time: "<< chrono::duration <double, milli> (diff).count() << " ms" << endl;
+
+       cout<<"TRUE";
+       scene3->setParams("DRAW", true);
+       //scene3->setParams("PRINT_START_POS", true);
+       scene3 ->isValidScene(modelnames3, model_poses);
+       cout<<model_poses[2].translation()[2];
+       break;
+     }  
+     i=i+0.01;
+  }
+  
+  /*
+  See why it's working for when you do the isvalidscene below but it doesn't working
+  when you do valid scene above? maybe there is something different when it comes to the start positions.
+  */
+
+
+  //scene3->setParams("PRINT_CHKR_RSLT", true);
+  //scene3->setParams("PRINT_START_POS", true);
+  cout<<model_poses[2].translation()[2];
+  //scene3->setParams("DRAW", true);
+  cout<<"Scene 4:"<<endl;
+  scene3->setParams("PRINT_CHKR_RSLT", true);
+  scene3->setParams("STEP4", 1000);
+  scene3->isValidScene(modelnames3, model_poses);
+
+  delete scene3 ;
+
+/*
+  SceneValidator *scene4  = new SceneValidator;
+  scene4 ->setParams("DRAW", true);
+  scene4->setParams("PRINT_CHKR_RSLT", true);
+  scene4->setParams("PRINT_START_POS", true);
+  scene4 ->setModels(modelnames3, filenames3);
+  cout<<"Scene 4:"<<endl;
+  scene4 ->isValidScene(modelnames3, model_poses); 
+*/
+  
+
+  //model_poses[0].translation()[1]=0.0;
+  //cout<<model_poses[0].translation()[1];
+  //scene.isValidScene(modelnames, model_poses);
+ 
+ /*
+  model_poses[0].translation()[0]=-1.0;
+  scene.isValidScene(modelnames, model_poses);
+
+  model_poses[0].translation()[0]=-0.0;
+  scene.isValidScene(modelnames, model_poses);
+*/
+
+
+/*
+model_poses[0].translation()[0]=i;
+
+ 
+  double i = -2;
+  while(i <= 1){
+    model_poses[0].translation()[0]=i;
+    bool valid = scene.isValidScene(modelnames, model_poses);
+ 	  if (valid){
+       cout<<"TRUE";
+       cout<<model_poses[0].translation()[0];
+     }  
+     i=i+0.5;
+  }
+  
+  double i = -2;
+  while(i <= 1){
+    model_poses[0].translation()[0]=i;
+    bool valid = scene.isValidScene(modelnames, model_poses);
+ 	  if (valid){
+       cout<<"TRUE";
+       cout<<model_poses[0].translation()[0];
+     }  
+     i=i+0.5;
+  }
+ 
+
+*/
 
 
 
