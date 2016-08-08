@@ -1,9 +1,9 @@
 /****************************************************/
 //     Author:  Joe Shepley
-//    Contact:  jshepley14@gmail.com
+//    Contact:  jshepley14@gmail.com or jls2303@columbia.edu
 //   Location:  Carnegie Mellon University Robotics Institute
 //       Date:  July 2016
-//Description:  This code provides functions which can be used to check if an set of objects are in static
+//Description:  This code provides functions which can be used to check if a set of objects are in static
 //              equilibrium or not.  The method to do this relies on in Open Dynamics Engine, a physics engine.
 //    Gitthub:  https://github.com/jshepley14/PhysicsEngine
 //   Glossary:
@@ -53,7 +53,7 @@ using namespace std;
 
 /* variables 
 
- ---  Variables that will affect computation time ---
+ ---  Variables that will affect time to validate scene ---
   DRAW (rendering an image significantly slows down computation time)
   MAX_CONTACTS
   STEP1, STEP2, STEP3, and STEP4
@@ -69,7 +69,7 @@ using namespace std;
   SOFT_CFM                                          */
 
 
-//Variables that can be set in setParams()
+//Variables that can be set in setParams() or in custom constructor
 static double BOUNCE = 0.0;            //change the bounciness
 static double BOUNCE_vel = 0.0;        //change the bounciness speed
 static int    DEFAULT_SCALE = 100;     //The default value each .obj files data is scaled down by
@@ -117,12 +117,11 @@ static chrono::steady_clock::time_point startTime, endTime;
 /* dynamics and collision object (this is the model's data) */
 
 struct MyObject {
-  dBodyID body;			 // the body
-  dGeomID geom[GPB]; // geometries representing this body
-  // Trimesh only - double buffered matrices for 'last transform' setup
-  string model_ID;
-  dReal matrix_dblbuff[ 16 * 2 ];
-  int last_matrix_index;
+  dBodyID body;			                     // the body of the object
+  dGeomID geom[GPB];                     // geometries representing this body
+  dReal matrix_dblbuff[ 16 * 2 ];        // double buffered matrices for 'last transform' setup (not sure what this does, it was from ODE trimesh demo)
+  int last_matrix_index;                 // has to do with double buffered matrices (not sure what this does, it was from ODE trimesh demo) 
+  string model_ID;                       //model's I.D.      
   dReal center[3];                       //the center x,y,z coordinates
   int indCount;                          //number of triangles (indices)
   int vertCount;                         //number of vertices
@@ -130,10 +129,10 @@ struct MyObject {
   vector<int> indexGeomVec;              //index list for the Trimesh, used all the time for Trimesh
   vector<float> vertexDrawVec;           //vertex list for Trimesh, but only used when drawing the Trimesh
   vector<float> vertexGeomVec;           //vetex list for the Trimesh, used all the time for Trimesh
-  vector<float> centerOfMass;
+  vector<float> centerOfMass;            //center of mass x,y,z
 };
 
-// class data   is for center of mass calculations
+// this class is for center of mass calculations
 class data
 {
 public:
@@ -159,16 +158,18 @@ static double scaling[NUM];                //array to be filled with scaling inf
 
 /*functions are below*/
 
-/* this is called by dSpaceCollide when two objects in space are potentially colliding */
+/* Handles objects' collisions (makes a termporary joint)
+   This is called by dSpaceCollide when two objects in space are potentially colliding. 
+   I did not alter this function from ODE trimesh demo except for the parameter values. */
 static void nearCallback (void *, dGeomID o1, dGeomID o2)
 {
   int i;
-  // if (o1->body && o2->body) return;
   // exit without doing anything if the two bodies are connected by a joint
   dBodyID b1 = dGeomGetBody(o1);
   dBodyID b2 = dGeomGetBody(o2);
   if (b1 && b2 && dAreConnectedExcluding (b1,b2,dJointTypeContact)) return;
 
+  //set parameters for each contact on the object
   dContact contact[MAX_CONTACTS];   // up to MAX_CONTACTS contacts per box-box
   for (i=0; i<MAX_CONTACTS; i++) {
     contact[i].surface.mode = dContactBounce | dContactSoftCFM;
@@ -178,6 +179,8 @@ static void nearCallback (void *, dGeomID o1, dGeomID o2)
     contact[i].surface.bounce_vel = BOUNCE_vel;
     contact[i].surface.soft_cfm = SOFT_CFM;
   }
+
+  //execute collision force (temporary joint)
   if (int numc = dCollide (o1,o2,MAX_CONTACTS,&contact[0].geom,
 			   sizeof(dContact))) {
     dMatrix3 RI;
@@ -210,15 +213,17 @@ static void start(){
 
 /* after a certaint number of simulation steps, checks if an object from a the scene is valid or not */
 static bool inStaticEquilibrium(MyObject &object){
-    double startX = object.center[0];
-    double startY = object.center[1];
-    double startZ = object.center[2];
-    double endX = dBodyGetPosition(object.body)[0];
-    double endY = dBodyGetPosition(object.body)[1];
-    double endZ = dBodyGetPosition(object.body)[2];
-    double deltaX = std::abs(startX - endX);
-    double deltaY = std::abs(startY - endY);
-    double deltaZ = std::abs(startZ - endZ);
+    double startX = object.center[0];                  //get the object's initial x pos.
+    double startY = object.center[1];                  //get the object's initial y pos.
+    double startZ = object.center[2];                  //get the object's initial z pos.
+    double endX = dBodyGetPosition(object.body)[0];    //get the object's final x pos.
+    double endY = dBodyGetPosition(object.body)[1];    //get the object's final y pos.
+    double endZ = dBodyGetPosition(object.body)[2];    //get the object's final z pos.
+    double deltaX = std::abs(startX - endX);           //calculate change in x
+    double deltaY = std::abs(startY - endY);           //calculate change in y
+    double deltaZ = std::abs(startZ - endZ);           //calculate change in z
+
+    //some if statements for if you want to print out what's happening
     if (PRINT_START_POS || PRINT_END_POS || PRINT_DELTA_POS){
       cout<<object.model_ID<<endl;
     }
@@ -231,7 +236,9 @@ static bool inStaticEquilibrium(MyObject &object){
     if (PRINT_DELTA_POS){
       cout<<"Delta: "<<deltaX<<", "<<deltaY<<", "<<deltaZ<<endl;
     }
-    //compare the change in the object's position to see how far it moved
+
+    // compare the change in the object's position to see how far it moved
+    // if change in object's position is greater than some threshold, return false
     if ( deltaX > THRESHOLD  || deltaY > THRESHOLD  || deltaZ > THRESHOLD ){
         return false;
     } else{
@@ -241,17 +248,19 @@ static bool inStaticEquilibrium(MyObject &object){
 
 
 
-/* after a certaint number of simulation steps, checks if a scene is valid or not */
+/* after a certaint number of simulation steps, checks if a scene is valid or not
+by iterating through the list of objects and checking if any of the object's moved too far */
 static bool isValid(std::vector<string> modelnames){
-    bool stable = true;
-    for (int i=0; i<num; i++){
+    bool stable = true;  //bool that says scene is stable (valid) or not
+    for (int i=0; i<num; i++){  //iterate through hashmap of modelnames that correspond to objects
        auto mappedObject= m.find(modelnames[i]);
-       if (!inStaticEquilibrium(mappedObject->second) ){
-          //cout << "FALSE: Not in static equilibrium" << endl;
+       if (!inStaticEquilibrium(mappedObject->second) ){  //check if an object has moved too much (beyond threshold)
           stable = false;
           break;
        }
     }
+
+    //print out the results and return the results as bools
     if (stable == true){
       if(PRINT_CHKR_RSLT){
         cout << "TRUE"<<endl;
@@ -273,10 +282,10 @@ void setObject (MyObject &object, int number, char* filename){
   int SCALE = number; //set the scale, or else object will be too big or too small, can set the scale manually if you want in setScale()
 
   //Load the file
-  objLoader *objData = new objLoader();     //this code relies on objLoader.h and it's dependencies
-	objData->load(filename);
-  object.indCount = objData->faceCount;     //gets number of faces in that make up the trimesh
-  object.vertCount = objData->vertexCount;  //gets the number of vertices that make up the trimesh
+  objLoader *objData = new objLoader();     //this objLoader code relies on objLoader.h and it's dependencies
+	objData->load(filename);                  //load the file to be referenced as an objData object
+  object.indCount = objData->faceCount;     //get number of faces that make up the trimesh
+  object.vertCount = objData->vertexCount;  //get the number of vertices that make up the trimesh
 
   //get the center of mass.  The procedure to do this was inspired by http://stackoverflow.com/questions/2083771/a-method-to-calculate-the-centre-of-mass-from-a-stl-stereo-lithography-file
   int numTriangles = objData->faceCount;
@@ -363,30 +372,31 @@ void makeObject (MyObject &object){
   dBodySetData (object.body,(void*)(size_t)i);
 
   //build Trimesh geom
-  dTriMeshDataID new_tmdata = dGeomTriMeshDataCreate();
-  dGeomTriMeshDataBuildSingle(new_tmdata, object.vertexGeomVec.data(), 3 * sizeof(float),
+  dTriMeshDataID new_tmdata = dGeomTriMeshDataCreate();  //set a trimesh ODE data type 
+  dGeomTriMeshDataBuildSingle(new_tmdata, object.vertexGeomVec.data(), 3 * sizeof(float),    //build the geometry of the trimesh
 	     object.vertCount, (int*)object.indexGeomVec.data(), object.indCount*3, 3 * sizeof(int));
-  object.geom[0] = dCreateTriMesh(space, new_tmdata, 0, 0, 0);
-  dGeomSetData(object.geom[0], new_tmdata);
-  dMassSetTrimesh( &m, DENSITY, object.geom[0] );
-  //gets the absolute bounding box, this code isn't currently used
+  object.geom[0] = dCreateTriMesh(space, new_tmdata, 0, 0, 0);  //create the trimesh using the ODE trimesh data that was just defined
+  dGeomSetData(object.geom[0], new_tmdata);  //officially set the data into the object's geom (geometry)
+  dMassSetTrimesh( &m, DENSITY, object.geom[0] );  //set the trimesh's mass
+  
+  //gets the absolute bounding box, you can print it. Nothing currently used the the AABB info, but could be helpful at some point
   dReal aabb[6];
   dGeomGetAABB (object.geom[0], aabb);
   if (PRINT_AABB){
     printf("AABB: minX %.3f, maxX %.3f, minY %.3f, maxY %.3f, minZ %.3f, maxZ %.3f\n",aabb[0],aabb[1],aabb[2],aabb[3],aabb[4],aabb[5] );
     printf("\n");
   }
-  //printf("Object's mass: %.4f\n", m.mass);
-  dGeomSetPosition(object.geom[0], m.c[0], m.c[1], m.c[2]);
+
+  dGeomSetPosition(object.geom[0], m.c[0], m.c[1], m.c[2]);  //this is required because ODE's mass has to be at (0,0,0)
   dMassTranslate(&m, -m.c[0], -m.c[1], -m.c[2]);  //object's center of mass must be at 0,0,0 relative to the rest of the object
+
   //build Trimesh body and unite geom with body
   for (k=0; k < GPB; k++){  //set body loop
       if (object.geom[k]){
-          dGeomSetBody(object.geom[k],object.body);
+          dGeomSetBody(object.geom[k],object.body); //unite body and geometry 
       }
   }
-  dBodySetMass(object.body,&m);
-
+  dBodySetMass(object.body,&m);  //set the body's mass
 
 }
 
@@ -394,21 +404,21 @@ void makeObject (MyObject &object){
 
 /* set the objects' 6DoF poses */
 void translateObject(MyObject &object, const dReal* center, const dMatrix3 R ){
-      object.center[0] = center[0];
-      object.center[1] = center[1];
-      object.center[2] = center[2];
-      dBodySetPosition (object.body, center[0], center[1], center[2]);
-      dBodySetRotation (object.body, R);
-      dBodySetLinearVel(object.body, 0, 0, 0);
-      dBodySetAngularVel(object.body, 0, 0, 0);
+      object.center[0] = center[0];  //set the object's initial x position (used when comparing initial vs final positions)
+      object.center[1] = center[1];  //set the object's initial y position
+      object.center[2] = center[2];  //set the object's initial z position
+      dBodySetPosition (object.body, center[0], center[1], center[2]);  //now we ACTUALLY set it's position in the simulation
+      dBodySetRotation (object.body, R);        //set it's rotation
+      dBodySetLinearVel(object.body, 0, 0, 0);  //set linear velocity to 0, else it would keep old lin. & ang. vel. from before we translated it
+      dBodySetAngularVel(object.body, 0, 0, 0); //set angular velocity to 0
 }
 
 
-
-/* set previous transformation matrix for trimesh */
+/* set previous transformation matrix for trimesh 
+   not entirely sure what this function's purpose is as it was directly from ODE trimesh demo */
 void setCurrentTransform(dGeomID geom){
-   const dReal* Pos = dGeomGetPosition(geom);
-   const dReal* Rot = dGeomGetRotation(geom);
+   const dReal* Pos = dGeomGetPosition(geom);  //get the object's current position
+   const dReal* Rot = dGeomGetRotation(geom);  //get the object's current rotation
    const dReal Transform[16] =
    {
      Rot[0], Rot[4], Rot[8],  0,
@@ -449,7 +459,7 @@ static void simLoop (int pause)
 
   if (!pause) dWorldQuickStep (world,TIMESTEP); //<- this is a big factor in accuracy and how long simulation takes
 
-  //not 100% what dSpaceGetNumGeoms() does... was in ODE trimesh demo
+  //not 100% what dSpaceGetNumGeoms() does... It was in ODE trimesh demo.
   for (int j = 0; j < dSpaceGetNumGeoms(space); j++){
 	  dSpaceGetGeom(space, j);
   }
@@ -519,14 +529,14 @@ static void simLoop (int pause)
 
 /* special simulation loop needed when drawing a scene (ultimately still uses simloop() though) */
 void drawstuffsimLoop(){
-  int argc=NULL;
-  char **argv=NULL;
-  dsFunctions fn;
-  fn.version = DS_VERSION;
-  fn.start = &start;
-  fn.step = &simLoop;
-  fn.command = NULL;
-  fn.stop = NULL;
+  int argc=NULL;           //just an argument that dsSimulationLoop must take. not used.
+  char **argv=NULL;        //just an argument that dsSimulationLoop must take. not used.
+  dsFunctions fn;          //defines callback functions used in dsSimulationLoop
+  fn.version = DS_VERSION; //gets version number 
+  fn.start = &start;       //start() is a function defined above which set the viewpoint
+  fn.step = &simLoop;      //simloop() is the simulaiton routine used in dsSimulationLoop
+  fn.command = NULL;       //if you want to have keyboard input. not used.
+  fn.stop = NULL;          //if you want to customize the stop function. not used.
   fn.path_to_textures = "/home/joeshepley/ode-0.13.1/drawstuff/textures";  //if you want to draw you need textures and so this was my path to them.
   dsSimulationLoop (argc,argv,WIDTH,HEIGHT,&fn);
 }
@@ -540,13 +550,13 @@ void SceneValidator::setModels(std::vector<string> modelnames, std::vector<strin
    if( modelnames.size() != filenames.size()){
           std::cout<<"***ERROR*** in setModels(std::vector<string> modelnames, std::vector<string> filenames). The problem is that modelnames is not the same size as filenames"<<endl;
    } else{
-      num = filenames.size();
+      num = filenames.size();  //number of models in scene
       for (int i =0; i < num; i++){
-          obj[i].model_ID=modelnames[i];
-          char *charfilenames = new char[filenames[i].length() + 1];
-          std::strcpy(charfilenames, filenames[i].c_str());
-          setObject(obj[i], scaling[i], charfilenames );
-          makeObject(obj[i]);
+          obj[i].model_ID=modelnames[i];  //set model ID to the corresponding model name
+          char *charfilenames = new char[filenames[i].length() + 1]; //convert to string
+          std::strcpy(charfilenames, filenames[i].c_str());  //convert to string
+          setObject(obj[i], scaling[i], charfilenames );   //set object's data
+          makeObject(obj[i]);  //create an object that can be used in simulation
       }
    }
    //make hashmap between modelnames and their data
