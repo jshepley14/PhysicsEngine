@@ -301,6 +301,7 @@ int obj_parse_obj_file(obj_growable_scene_data *growable_data, char *filename)
 	if(obj_file_stream == 0)
 	{
 		fprintf(stderr, "Error reading file: %s\n", filename);
+		fprintf(stderr, "^^Make sure you named the file path correctly or that the file exists in directory you named :) \n");
 		return 0;
 	}
 

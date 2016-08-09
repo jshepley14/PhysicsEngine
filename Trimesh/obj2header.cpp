@@ -7,13 +7,15 @@
 #include <fstream>
 using namespace std;
 #define SCALE 100  //need to divide by this number or else object is huge
-#define SHIFT 1  //want object to be centered at the origin
+#define SHIFTx 0//-0.047
+#define SHIFTy 0//-0.028
+#define SHIFTz 0//-1.61  //want object to be centered at the origin
 
 void printVector(FILE *out, obj_vector *v)
 {
-	fprintf(out, "	REAL(%.2f), ", v->e[0]/SCALE );
-	fprintf(out, "REAL(%.2f), ", v->e[1]/SCALE );
-	fprintf(out, "REAL(%.2f),  ", (v->e[2]/SCALE) - SHIFT);
+	fprintf(out, "	REAL(%.2f), ", v->e[0]/SCALE - SHIFTx);
+	fprintf(out, "REAL(%.2f), ", v->e[1]/SCALE - SHIFTy);
+	fprintf(out, "REAL(%.2f),  ", (v->e[2]/SCALE) - SHIFTz);
 }
 
 int main(int argc, char **argv){
@@ -21,12 +23,13 @@ int main(int argc, char **argv){
 
 	//used for writing to file
 	FILE *out;
-	out = fopen("milk_carton2.h", "w");
+	out = fopen("thin_cup.h", "w");
 
 	objLoader *objData = new objLoader();
-	objData->load("milk_carton.obj");
+	objData->load("/home/joeshepley/3DModels/obj_files/fromPLY/veryThin/200.580.66.obj");
 
-
+    cout<<"vertex count: "<<objData->vertexCount<<endl;
+	cout<<"face count: "<< objData->faceCount<<endl;
 	//try ffprinting with cout<<
 	fprintf(out, "const int VertexCount = %i;", objData->vertexCount);
 	fprintf(out, "\n");	

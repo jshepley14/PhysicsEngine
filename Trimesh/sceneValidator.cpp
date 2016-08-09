@@ -72,7 +72,7 @@ using namespace std;
 //Variables that can be set in setParams() or in custom constructor
 static double BOUNCE = 0.0;            //change the bounciness
 static double BOUNCE_vel = 0.0;        //change the bounciness speed
-static int    DEFAULT_SCALE = 100;     //The default value each .obj files data is scaled down by
+static double DEFAULT_SCALE = 100;    //The default value each .obj files data is scaled down by 
 static double DENSITY = 5.0;           //The default is from ODE trimesh demo
 static bool   DRAW = false;            //used to switch on or off the drawing of the scene
 static double FRICTION_mu =  1.0;      //if you set this to 0 objects will be very slippery
@@ -277,9 +277,9 @@ static bool isValid(std::vector<string> modelnames){
 
 
 /* sets all the objects' data */
-void setObject (MyObject &object, int number, char* filename){
+void setObject (MyObject &object, double number, char* filename){
 
-  int SCALE = number; //set the scale, or else object will be too big or too small, can set the scale manually if you want in setScale()
+  double SCALE = number; //set the scale, or else object will be too big or too small, can set the scale manually if you want in setScale()
 
   //Load the file
   objLoader *objData = new objLoader();     //this objLoader code relies on objLoader.h and it's dependencies
@@ -771,222 +771,67 @@ SceneValidator::~SceneValidator(){
   dCloseODE();
 }
 
+
+
 int main (int argc, char **argv)
 {
-
+  
 
  // Here's all the input***********************************************************************************************************
+  
+                              //doesn't load this flipped version of the file (reversing coordinates makes negative dot product calculations)
+  vector<string> filenames = {"/home/joeshepley/3DModels/imperial_dataset/meshes/object_files/oreo2.obj"};
 
-  vector<string> filenames1 = {"/home/joeshepley/3DModels/obj_files/fromPLY/vf_paper_bowl.obj"};
-  vector<string> modelnames1 = {"paper_bowl"};
-
-
-
-
-  vector<string> filenames2 = {"/home/joeshepley/3DModels/obj_files/fromPLY/vf_paper_bowl.obj",
-                             "/home/joeshepley/3DModels/obj_files/fromPLY/red_mug.obj"};
-  vector<string> modelnames2 = {"paper_bowl", "red_mug"};
-
-
-
-
-  vector<string> filenames3 = {"/home/joeshepley/3DModels/obj_files/fromPLY/vf_paper_bowl.obj",
-                              "/home/joeshepley/3DModels/obj_files/fromPLY/red_mug.obj", 
-                              "/home/joeshepley/3DModels/obj_files/fromSTL/dog.obj"};
-  vector<string> modelnames3 = {"paper_bowl", "red_mug","dog"};
-
-  //ground truth is paper_bowl 0,0,.27   red_mug 0,0,1.13   dog 0,0,2.03
-
+                             
+  
+  vector<string> modelnames = {"test_object"};
+  
   //make affine3d's
-  Eigen::Quaterniond q;
+  Eigen::Quaterniond q;  
   q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
   q.normalize();
   Eigen::Affine3d aq = Eigen::Affine3d(q);
-  Eigen::Affine3d t(Eigen::Translation3d(Eigen::Vector3d(0,0,0))); //paper_bowl 
-  Eigen::Affine3d a = (t*aq);
-
+  Eigen::Affine3d t(Eigen::Translation3d(Eigen::Vector3d(0,0,2)));
+  Eigen::Affine3d a = (t*aq); 
+    
+  q = Eigen::Quaterniond(0.7, 0.3, 0, 0);
+  q.normalize();
+  aq = Eigen::Affine3d(q);
+  t = (Eigen::Translation3d(Eigen::Vector3d(0,0,2)));
+  Eigen::Affine3d b = (t*aq); 
+    
   q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
   q.normalize();
   aq = Eigen::Affine3d(q);
-  t = (Eigen::Translation3d(Eigen::Vector3d(0,0,0)));  //mug 
-  Eigen::Affine3d b = (t*aq);
+  t =  (Eigen::Translation3d(Eigen::Vector3d(0,0,1)));
+  Eigen::Affine3d c = (t*aq);   
 
-  q = Eigen::Quaterniond(0.5, 0.5, 0, 0);
-  q.normalize();
-  aq = Eigen::Affine3d(q);
-  t =  (Eigen::Translation3d(Eigen::Vector3d(0,0,0)));  //dog 
-  Eigen::Affine3d c = (t*aq);
-
-  vector<Eigen::Affine3d> model_poses = {a,b,c};  
-
-///........................................not used
   q = Eigen::Quaterniond(0.3, 0.7, 0, 0);
   q.normalize();
   aq = Eigen::Affine3d(q);
-  t =  (Eigen::Translation3d(Eigen::Vector3d(-2,0, 1.59)));
-  Eigen::Affine3d a2 = (t*aq);
-
-  vector<Eigen::Affine3d> model_poses2 = {a2,b,c};  //teacup falling from the sky
+  t =  (Eigen::Translation3d(Eigen::Vector3d(0,0,1)));
+  Eigen::Affine3d d = (t*aq); 
+  
+  vector<Eigen::Affine3d> model_poses1 = {a};
+  vector<Eigen::Affine3d> model_poses2 = {b};
+  vector<Eigen::Affine3d> model_poses3 = {c};
+  vector<Eigen::Affine3d> model_poses4 = {d};  
 // Here's all the input^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-
-
-
-
-
-
-  startTime = chrono::steady_clock::now();
-
   // construct object and set parameters
-  SceneValidator *scene = new SceneValidator;
-  //scene->setParams("DRAW", true);                //visualize what's actually happening
-  //scene.setParams("PRINT_CHKR_RSLT", true);     //print out the result of each check
-  //scene.setParams("STEP1", 1000);               //make the first check take 1000 steps
-  //scene-> setScale(2, 10);
-  //scene-> setParams("PRINT_AABB", true);
-  //scene-> setParams("PRINT_COM", true);
-  //scene-> setParams("PRINT_DELTA_POS", true);
-  //scene-> setParams("PRINT_END_POS", true);
+  SceneValidator *scene = new SceneValidator;    //construct the object
+  scene->setParams("DRAW", true);                //visualize what's actually happening 
+  scene->setParams("PRINT_CHKR_RSLT", true);     //print out the result of each check
+  scene->setParams("STEP1", 1000);               //make the first check take 1000 steps
+  scene->setScale(0, 0.05);                       //set modelnames[0] to be scaled down by factor of 200   
 
   // API functions
-  scene-> setModels(modelnames1, filenames1);       //set all the models and get their data
-  //model_poses[0].translation()[2]=0.19;
-  //scene-> isValidScene(modelnames1, model_poses);
-
-  scene-> setParams("THRESHOLD", 0.01); 
-  double i = 0;
-  while(i <= 3){
-    model_poses[0].translation()[2]=i;
-    bool valid = scene-> isValidScene(modelnames1, model_poses);  
- 	  if (valid){
-       cout<<"TRUE";
-       cout<<model_poses[0].translation()[2];
-       break;
-     }  
-     i=i+0.01;
-  }
-  delete scene;
-  
- 
-
-
-
-  SceneValidator *scene2 = new SceneValidator;
-  //scene2->setParams("DRAW", true);
-  scene2->setModels(modelnames2, filenames2);
-  scene2->setParams("THRESHOLD", 0.04); 
-  //i = model_poses[0].translation()[2]*2;
-  i=1.0;
-  while(i <= 3){
-    model_poses[1].translation()[2]=i;
-    bool valid = scene2->isValidScene(modelnames2, model_poses);  
- 	  if (valid){
-       cout<<"TRUE";
-       cout<<model_poses[1].translation()[2];
-       break;
-     }  
-     i=i+0.01;
-  }
-  delete scene2;
-
-
-  SceneValidator *scene3  = new SceneValidator;
-  //scene3 ->setParams("DRAW", true);
-  scene3->setScale(2,10);
-  scene3 ->setModels(modelnames3, filenames3);
-  scene3 ->setParams("THRESHOLD", 0.05);
-  //i=model_poses[1].translation()[2]; 
-  i=1.8;
-  while(i <= 3){
-    model_poses[2].translation()[2]=i;
-    bool valid = scene3 ->isValidScene(modelnames3, model_poses);  
- 	  if (valid){
-       
-       endTime = chrono::steady_clock::now();
-       auto diff = endTime - startTime;
-       cout <<"Time: "<< chrono::duration <double, milli> (diff).count() << " ms" << endl;
-
-       cout<<"TRUE";
-       scene3->setParams("DRAW", true);
-       //scene3->setParams("PRINT_START_POS", true);
-       scene3 ->isValidScene(modelnames3, model_poses);
-       cout<<model_poses[2].translation()[2];
-       break;
-     }  
-     i=i+0.01;
-  }
-  
-  /*
-  See why it's working for when you do the isvalidscene below but it doesn't working
-  when you do valid scene above? maybe there is something different when it comes to the start positions.
-  */
-
-
-  //scene3->setParams("PRINT_CHKR_RSLT", true);
-  //scene3->setParams("PRINT_START_POS", true);
-  cout<<model_poses[2].translation()[2];
-  //scene3->setParams("DRAW", true);
-  cout<<"Scene 4:"<<endl;
-  scene3->setParams("PRINT_CHKR_RSLT", true);
-  scene3->setParams("STEP4", 1000);
-  scene3->isValidScene(modelnames3, model_poses);
-
-  delete scene3 ;
-
-/*
-  SceneValidator *scene4  = new SceneValidator;
-  scene4 ->setParams("DRAW", true);
-  scene4->setParams("PRINT_CHKR_RSLT", true);
-  scene4->setParams("PRINT_START_POS", true);
-  scene4 ->setModels(modelnames3, filenames3);
-  cout<<"Scene 4:"<<endl;
-  scene4 ->isValidScene(modelnames3, model_poses); 
-*/
-  
-
-  //model_poses[0].translation()[1]=0.0;
-  //cout<<model_poses[0].translation()[1];
-  //scene.isValidScene(modelnames, model_poses);
- 
- /*
-  model_poses[0].translation()[0]=-1.0;
-  scene.isValidScene(modelnames, model_poses);
-
-  model_poses[0].translation()[0]=-0.0;
-  scene.isValidScene(modelnames, model_poses);
-*/
-
-
-/*
-model_poses[0].translation()[0]=i;
-
- 
-  double i = -2;
-  while(i <= 1){
-    model_poses[0].translation()[0]=i;
-    bool valid = scene.isValidScene(modelnames, model_poses);
- 	  if (valid){
-       cout<<"TRUE";
-       cout<<model_poses[0].translation()[0];
-     }  
-     i=i+0.5;
-  }
-  
-  double i = -2;
-  while(i <= 1){
-    model_poses[0].translation()[0]=i;
-    bool valid = scene.isValidScene(modelnames, model_poses);
- 	  if (valid){
-       cout<<"TRUE";
-       cout<<model_poses[0].translation()[0];
-     }  
-     i=i+0.5;
-  }
- 
-
-*/
-
+  scene->setModels(modelnames, filenames);       //set all the models and get their data  
+  scene->isValidScene(modelnames, model_poses1);  //check scene 1
+  scene->isValidScene(modelnames, model_poses2); //check scene 2
+  scene->isValidScene(modelnames, model_poses3); //check scene 3
+  scene->isValidScene(modelnames, model_poses4); //check scene 4
 
 
   return 0;
